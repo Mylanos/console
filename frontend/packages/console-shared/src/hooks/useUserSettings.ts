@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { createHash } from 'crypto-browserify';
 // FIXME upgrading redux types is causing many errors at this time
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -9,6 +8,7 @@ import { useK8sWatchResource } from '@console/internal/components/utils/k8s-watc
 import { ConfigMapModel } from '@console/internal/models';
 import { K8sResourceKind } from '@console/internal/module/k8s';
 import { RootState } from '@console/internal/redux';
+import { generateHash } from '@console/shared';
 import {
   createConfigMap,
   deseralizeData,
@@ -63,18 +63,30 @@ export const useUserSettings: UseUserSettings = <T>(key, defaultValue, sync = fa
   // Request counter
   const [isRequestPending, increaseRequest, decreaseRequest] = useCounterRef();
 
-  const hashNameOrKubeadmin = (name: string): string | null => {
-    if (!name) {
-      return null;
-    }
+  const [username, setUsername] = React.useState<string | null>(null);
+  const [uniqueUsername, setUniqueUsername] = React.useState<string | null>(null);
 
-    if (name === 'kube:admin') {
-      return 'kubeadmin';
-    }
-    const hash = createHash('sha256');
-    hash.update(name);
-    return hash.digest('hex');
-  };
+  React.useEffect(() => {
+    const hashNameOrKubeadmin = async (name: string): Promise<string | null> => {
+      if (!name) {
+        return null;
+      }
+
+      if (name === 'kube:admin') {
+        return 'kubeadmin';
+      }
+      return generateHash('SHA-256', name);
+    };
+
+    hashNameOrKubeadmin(username)
+      .then((hash) => {
+        setUniqueUsername(hash);
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('Did not manage to create a hash:', err);
+      });
+  }, [username]);
 
   // User and impersonate
   const userUid = useSelector((state: RootState) => {
@@ -86,9 +98,9 @@ export const useUserSettings: UseUserSettings = <T>(key, defaultValue, sync = fa
     if (uid) {
       return uid;
     }
-    const username = hashNameOrKubeadmin(getUser(state)?.username);
+    setUsername(getUser(state)?.username);
 
-    return username || '';
+    return uniqueUsername || '';
   });
 
   const impersonate: boolean = useSelector((state: RootState) => !!getImpersonate(state));
