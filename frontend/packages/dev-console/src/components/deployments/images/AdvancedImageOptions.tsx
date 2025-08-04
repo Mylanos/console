@@ -8,7 +8,7 @@ import { SecretModel } from '@console/internal/models';
 import { ResourceDropdownField } from '@console/shared/src';
 import { secretModalLauncher } from '../../import/CreateSecretModal';
 
-const AdvancedImageOptions: React.FC = () => {
+const AdvancedImageOptions = () => {
   const { t } = useTranslation();
   const {
     setFieldValue,
@@ -18,6 +18,7 @@ const AdvancedImageOptions: React.FC = () => {
       },
     },
   } = useFormikContext<FormikValues>();
+
   const filterData = (item) => {
     return (
       item.type === 'kubernetes.io/dockercfg' || item.type === 'kubernetes.io/dockerconfigjson'
@@ -26,6 +27,21 @@ const AdvancedImageOptions: React.FC = () => {
   const handleSave = (name: string) => {
     setFieldValue('formData.imagePullSecret', name);
   };
+
+  React.useEffect(() => {
+    const handleFormSubmissionPrevention = (e: Event) => {
+      const target = e.target as HTMLElement;
+      // prevents scroll to when clicking on dropdown menu items with href="#"
+      if (target && target.closest('a[href="#"]')) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('click', handleFormSubmissionPrevention, { capture: true });
+    return () =>
+      document.removeEventListener('click', handleFormSubmissionPrevention, { capture: true });
+  }, []);
+
   return (
     <ExpandCollapse
       textExpanded={t('devconsole~Hide advanced image options')}
