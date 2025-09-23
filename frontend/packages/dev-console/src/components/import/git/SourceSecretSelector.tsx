@@ -3,7 +3,7 @@ import { FormGroup, FormHelperText, HelperText, HelperTextItem } from '@patternf
 import { useFormikContext, FormikValues } from 'formik';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { SecretTypeAbstraction } from '@console/internal/components/secrets/create-secret';
+import { SecretFormType } from '@console/internal/components/secrets/create-secret';
 import { useK8sWatchResource } from '@console/internal/components/utils/k8s-watch-hook';
 import { SecretModel } from '@console/internal/models';
 import { getFieldId } from '@console/shared';
@@ -44,7 +44,7 @@ const SourceSecretSelector: React.FC<{
       secretModalLauncher({
         namespace,
         save: handleSave,
-        secretType: SecretTypeAbstraction.source,
+        formType: SecretFormType.source,
       });
     } else if (key === CLEAR_SOURCE_SECRET) {
       setFieldValue(`${fieldPrefix}git.secret`, '');
@@ -69,7 +69,7 @@ const SourceSecretSelector: React.FC<{
         label={t('devconsole~Source Secret')}
       >
         <SourceSecretDropdown
-          dropDownClassName="dropdown--full-width"
+          isFullWidth
           menuClassName="dropdown-menu--text-wrap"
           namespace={namespace}
           actionItems={[

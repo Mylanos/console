@@ -2,8 +2,12 @@ import {
   CatalogItem,
   CatalogItemAttribute,
   CatalogItemType,
+  CatalogCategory,
 } from '@console/dynamic-plugin-sdk/src/extensions';
-import { ResolvedExtension } from '@console/dynamic-plugin-sdk/src/types';
+import {
+  ResolvedCodeRefProperties,
+  ResolvedExtension,
+} from '@console/dynamic-plugin-sdk/src/types';
 
 export enum CatalogQueryParams {
   TYPE = 'catalogType',
@@ -35,25 +39,14 @@ export type CatalogTypeCounts = Record<string, number>;
 
 export type CatalogStringMap = Record<string, string>;
 
-export type CatalogFilterGroupMap = { [key: string]: CatalogItemAttribute };
+export type CatalogFilterGroupMap = {
+  [key: string]: ResolvedCodeRefProperties<CatalogItemAttribute>;
+};
 
 export type CatalogType = {
   label: string;
   value: string;
   description: string;
-};
-
-export type CatalogCategory = {
-  id: string;
-  label: string;
-  tags?: string[];
-  subcategories?: CatalogSubcategory[];
-};
-
-export type CatalogSubcategory = {
-  id: string;
-  label: string;
-  tags?: string[];
 };
 
 export type CatalogService = {
@@ -64,4 +57,5 @@ export type CatalogService = {
   loadError: any;
   searchCatalog: (query: string) => CatalogItem[];
   catalogExtensions: ResolvedExtension<CatalogItemType>[];
+  categories?: CatalogCategory[];
 };

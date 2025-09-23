@@ -19,6 +19,7 @@ import {
   app,
   installKnativeOperatorUsingCLI,
 } from '@console/dev-console/integration-tests/support/pages';
+import { checkDeveloperPerspective } from '@console/dev-console/integration-tests/support/pages/functions/checkDeveloperPerspective';
 import { userLoginPage } from '../../pages/functions/common';
 
 Given('user has installed OpenShift Serverless Operator', () => {
@@ -31,6 +32,7 @@ Given('user has logged in as a basic user', () => {
 });
 
 Given('user is at developer perspective', () => {
+  checkDeveloperPerspective();
   perspective.switchTo(switchPerspective.Developer);
   cy.testA11y('Developer perspective with guide tour modal');
   guidedTour.close();
@@ -38,11 +40,48 @@ Given('user is at developer perspective', () => {
   cy.testA11y('Developer perspective');
 });
 
+Given('user is at administrator perspective', () => {
+  perspective.switchTo(switchPerspective.Administrator);
+});
+
 Given('user has created or selected namespace {string}', (projectName: string) => {
   Cypress.env('NAMESPACE', projectName);
   projectNameSpace.selectOrCreateProject(projectName);
+  // eslint-disable-next-line cypress/no-unnecessary-waiting
+  cy.wait(20000);
+  cy.exec(
+    `kubectl -n ${Cypress.env(
+      'NAMESPACE',
+    )} wait --for condition=established --timeout=80s crd/pipelineruns.tekton.dev`,
+    {
+      failOnNonZeroExit: false,
+    },
+  ).then(function (result) {
+    cy.log(`STDOUT: ${result.stdout}`);
+    cy.log(`STDERR: ${result.stderr}`);
+  });
+  cy.exec(
+    `kubectl -n ${Cypress.env(
+      'NAMESPACE',
+    )} wait --for condition=established --timeout=80s crd/tasks.tekton.dev`,
+    {
+      failOnNonZeroExit: false,
+    },
+  ).then(function (result) {
+    cy.log(`STDOUT: ${result.stdout}`);
+    cy.log(`STDERR: ${result.stderr}`);
+  });
   cy.exec(
     `oc apply -f testData/installTasksInsteadOfClusterTask.yaml -n ${Cypress.env('NAMESPACE')}`,
+    {
+      failOnNonZeroExit: false,
+    },
+  ).then(function (result) {
+    cy.log(`STDOUT: ${result.stdout}`);
+    cy.log(`STDERR: ${result.stderr}`);
+  });
+  cy.exec(
+    `oc wait --for=condition=ready pod -l app=tekton-operator -n openshift-operators --timeout=800s`,
     {
       failOnNonZeroExit: false,
     },

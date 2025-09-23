@@ -1,7 +1,5 @@
-import * as React from 'react';
-import { Map as ImmutableMap } from 'immutable';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
+import { useRef, useMemo, useEffect } from 'react';
+import { Map as ImmutableMap, Iterable as ImmutableIterable } from 'immutable';
 import { useSelector, useDispatch } from 'react-redux';
 import { createSelectorCreator, defaultMemoize } from 'reselect';
 import { K8sModel } from '../../../api/common-types';
@@ -47,7 +45,7 @@ export const useK8sWatchResources: UseK8sWatchResources = (initResources) => {
   const prevK8sModels = usePrevious(allK8sModels);
   const prevResources = usePrevious(resources);
 
-  const k8sModelsRef = React.useRef<ImmutableMap<string, K8sModel>>(ImmutableMap());
+  const k8sModelsRef = useRef<ImmutableIterable<string, K8sModel>>(ImmutableMap());
 
   if (
     prevResources !== resources ||
@@ -70,7 +68,7 @@ export const useK8sWatchResources: UseK8sWatchResources = (initResources) => {
 
   const k8sModels = k8sModelsRef.current;
 
-  const reduxIDs = React.useMemo<{
+  const reduxIDs = useMemo<{
     [key: string]: ReturnType<GetIDAndDispatch<OpenShiftReduxRootState>> & { noModel: boolean };
   }>(
     () =>
@@ -101,7 +99,7 @@ export const useK8sWatchResources: UseK8sWatchResources = (initResources) => {
   );
 
   const dispatch = useDispatch();
-  React.useEffect(() => {
+  useEffect(() => {
     const reduxIDKeys = Object.keys(reduxIDs || {});
     reduxIDKeys.forEach((k) => {
       if (reduxIDs[k].dispatch) {
@@ -117,7 +115,7 @@ export const useK8sWatchResources: UseK8sWatchResources = (initResources) => {
     };
   }, [dispatch, reduxIDs]);
 
-  const resourceK8sSelectorCreator = React.useMemo(
+  const resourceK8sSelectorCreator = useMemo(
     () =>
       createSelectorCreator(
         // specifying createSelectorCreator<ImmutableMap<string, K8sKind>> throws type error
@@ -130,7 +128,7 @@ export const useK8sWatchResources: UseK8sWatchResources = (initResources) => {
     [reduxIDs],
   );
 
-  const resourceK8sSelector = React.useMemo(
+  const resourceK8sSelector = useMemo(
     () =>
       resourceK8sSelectorCreator(
         (state: OpenShiftReduxRootState) => state.k8s,
@@ -141,7 +139,7 @@ export const useK8sWatchResources: UseK8sWatchResources = (initResources) => {
 
   const resourceK8s = useSelector(resourceK8sSelector);
 
-  const results = React.useMemo(
+  const results = useMemo(
     () =>
       Object.keys(resources).reduce((acc, key) => {
         if (reduxIDs?.[key].noModel) {

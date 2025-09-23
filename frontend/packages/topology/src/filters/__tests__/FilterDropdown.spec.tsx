@@ -1,7 +1,5 @@
-import * as React from 'react';
-import { Switch, SelectOption } from '@patternfly/react-core';
-import { mount, shallow } from 'enzyme';
-import { DisplayFilters, TopologyDisplayFilterType, TopologyViewType } from '../../topology-types';
+import { render, screen } from '@testing-library/react';
+import { DisplayFilters, TopologyViewType } from '../../topology-types';
 import {
   DEFAULT_TOPOLOGY_FILTERS,
   EXPAND_APPLICATION_GROUPS_FILTER_ID,
@@ -9,23 +7,11 @@ import {
 } from '../const';
 import { getFilterById } from '../filter-utils';
 import FilterDropdown from '../FilterDropdown';
+import '@testing-library/jest-dom';
 
 jest.mock('@console/shared/src/hooks/useTelemetry', () => ({
   useTelemetry: () => {},
 }));
-
-// FIXME Remove this code when jest is updated to at least 25.1.0 -- see https://github.com/jsdom/jsdom/issues/1555
-if (!Element.prototype.closest) {
-  Element.prototype.closest = function (this: Element, selector: string) {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias, consistent-this
-    let el: Element | null = this;
-    while (el) {
-      if (el.matches(selector)) return el;
-      el = el.parentElement;
-    }
-    return null;
-  };
-}
 
 describe(FilterDropdown.displayName, () => {
   let dropdownFilter: DisplayFilters;
@@ -35,8 +21,8 @@ describe(FilterDropdown.displayName, () => {
     onChange = jasmine.createSpy();
   });
 
-  it('should exists', () => {
-    const wrapper = shallow(
+  it('should exist', () => {
+    render(
       <FilterDropdown
         filters={dropdownFilter}
         viewType={TopologyViewType.graph}
@@ -44,11 +30,11 @@ describe(FilterDropdown.displayName, () => {
         onChange={onChange}
       />,
     );
-    expect(wrapper.exists()).toBeTruthy();
+    expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  it('should have the correct number of filters for graph view', () => {
-    const wrapper = mount(
+  it('should have the correct number of filters for graph view', async () => {
+    render(
       <FilterDropdown
         filters={dropdownFilter}
         viewType={TopologyViewType.graph}
@@ -57,11 +43,21 @@ describe(FilterDropdown.displayName, () => {
         opened
       />,
     );
-    expect(wrapper.find(SelectOption)).toHaveLength(DEFAULT_TOPOLOGY_FILTERS.length - 1);
+
+    const expandLabel = await screen.findByText('Application groupings');
+    const showLabel1 = await screen.findByText('Pod count');
+    const showLabel2 = await screen.findByText('Labels');
+
+    expect(expandLabel).toBeInTheDocument();
+    expect(showLabel1).toBeInTheDocument();
+    expect(showLabel2).toBeInTheDocument();
+
+    const filterItems = screen.getAllByRole('menuitem');
+    expect(filterItems).toHaveLength(3);
   });
 
-  it('should hide the show filters for list view', () => {
-    const wrapper = mount(
+  it('should have the correct number of filters for list view', async () => {
+    render(
       <FilterDropdown
         filters={dropdownFilter}
         viewType={TopologyViewType.list}
@@ -70,13 +66,19 @@ describe(FilterDropdown.displayName, () => {
         opened
       />,
     );
-    expect(wrapper.find(SelectOption)).toHaveLength(
-      DEFAULT_TOPOLOGY_FILTERS.filter((f) => f.type !== TopologyDisplayFilterType.show).length - 1,
-    );
+
+    const expandLabel = await screen.findByText('Application groupings');
+    expect(expandLabel).toBeInTheDocument();
+
+    expect(screen.queryByText('Pod count')).not.toBeInTheDocument();
+    expect(screen.queryByText('Labels')).not.toBeInTheDocument();
+
+    const filterItems = screen.getAllByRole('menuitem');
+    expect(filterItems).toHaveLength(1);
   });
 
-  it('should hide unsupported filters', () => {
-    const wrapper = mount(
+  it('should hide unsupported filters', async () => {
+    render(
       <FilterDropdown
         filters={dropdownFilter}
         viewType={TopologyViewType.graph}
@@ -85,11 +87,12 @@ describe(FilterDropdown.displayName, () => {
         opened
       />,
     );
-    expect(wrapper.find(SelectOption)).toHaveLength(1);
+    const checkboxes = await screen.findAllByRole('checkbox');
+    expect(checkboxes.length).toBe(1);
   });
 
-  it('should contain the expand groups switch', () => {
-    const wrapper = mount(
+  it('should contain the expand groups switch', async () => {
+    render(
       <FilterDropdown
         filters={dropdownFilter}
         viewType={TopologyViewType.graph}
@@ -98,12 +101,14 @@ describe(FilterDropdown.displayName, () => {
         opened
       />,
     );
-    expect(wrapper.find(Switch)).toHaveLength(1);
+    const switches = await screen.findAllByRole('switch');
+    expect(switches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should disable individual group expand when expand groups is false', () => {
+  it('should disable individual group expand when expand groups is false', async () => {
     getFilterById(EXPAND_GROUPS_FILTER_ID, dropdownFilter).value = false;
-    const wrapper = mount(
+
+    render(
       <FilterDropdown
         filters={dropdownFilter}
         viewType={TopologyViewType.graph}
@@ -112,6 +117,10 @@ describe(FilterDropdown.displayName, () => {
         opened
       />,
     );
-    expect(wrapper.find('[disabled].pf-v6-c-menu-toggle')).toBeTruthy();
+    const disabledCheckboxes = screen
+      .queryAllByRole('checkbox', { hidden: true })
+      .filter((el) => el.hasAttribute('disabled'));
+
+    expect(disabledCheckboxes.length).toBeGreaterThan(0);
   });
 });

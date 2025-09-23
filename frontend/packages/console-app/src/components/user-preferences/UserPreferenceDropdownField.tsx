@@ -63,9 +63,9 @@ const UserPreferenceDropdownField: React.FC<UserPreferenceDropdownFieldProps> = 
 
   // utils and callbacks
   const getDropdownValueFromLabel = (searchLabel: string): string =>
-    options.find((option) => option.label === searchLabel)?.value;
+    options.find((option) => option.label === searchLabel)?.value || '';
   const getDropdownLabelFromValue = (searchValue: string): string =>
-    options.find((option) => option.value === searchValue)?.label;
+    options.find((option) => option.value === searchValue)?.label || '';
 
   const selected = getDropdownLabelFromValue(currentUserPreferenceValue);
 
@@ -81,9 +81,7 @@ const UserPreferenceDropdownField: React.FC<UserPreferenceDropdownFieldProps> = 
 
   return loaded ? (
     <>
-      {description && (
-        <div className="co-help-text co-user-preference-field--description">{description}</div>
-      )}
+      {description && <div className="co-user-preference-field--description">{description}</div>}
       <Select
         selected={selected}
         onOpenChange={(open) => setIsOpen(open)}

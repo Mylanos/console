@@ -1,5 +1,16 @@
 [
   {
+    "type": "console.action/resource-provider",
+    "properties": {
+      "model": {
+        "group": "user.openshift.io",
+        "version": "v1",
+        "kind": "Group"
+      },
+      "provider": { "$codeRef": "groupProvider.useGroupActionsProvider" }
+    }
+  },
+  {
     "type": "console.perspective",
     "properties": {
       "id": "admin",
@@ -163,7 +174,7 @@
         "version": "v1",
         "kind": "OAuth"
       },
-      "component": { "$codeRef": "oauthConfigDetailsPage.default" }
+      "component": { "$codeRef": "oauthConfigDetailsPage" }
     },
     "flags": {
       "required": ["OPENSHIFT_OAUTH_API"]
@@ -215,10 +226,7 @@
         "version": "v1",
         "kind": "Deployment"
       },
-      "provider": { "$codeRef": "actions.useCreateServiceBindingProvider" }
-    },
-    "flags": {
-      "required": ["ALLOW_SERVICE_BINDING"]
+      "provider": { "$codeRef": "deploymentProvider.useDeploymentActionsProvider" }
     }
   },
   {
@@ -229,48 +237,7 @@
         "version": "v1",
         "kind": "DeploymentConfig"
       },
-      "provider": { "$codeRef": "actions.useCreateServiceBindingProvider" }
-    },
-    "flags": {
-      "required": ["ALLOW_SERVICE_BINDING"]
-    }
-  },
-  {
-    "type": "console.action/resource-provider",
-    "properties": {
-      "model": {
-        "group": "serving.knative.dev",
-        "version": "v1",
-        "kind": "Service"
-      },
-      "provider": {
-        "$codeRef": "actions.useCreateServiceBindingProvider"
-      }
-    },
-    "flags": {
-      "required": ["ALLOW_SERVICE_BINDING"]
-    }
-  },
-  {
-    "type": "console.action/resource-provider",
-    "properties": {
-      "model": {
-        "group": "apps",
-        "version": "v1",
-        "kind": "Deployment"
-      },
-      "provider": { "$codeRef": "actions.useDeploymentActionsProvider" }
-    }
-  },
-  {
-    "type": "console.action/resource-provider",
-    "properties": {
-      "model": {
-        "group": "apps.openshift.io",
-        "version": "v1",
-        "kind": "DeploymentConfig"
-      },
-      "provider": { "$codeRef": "actions.useDeploymentConfigActionsProvider" }
+      "provider": { "$codeRef": "deploymentConfigProvider.useDeploymentConfigActionsProvider" }
     },
     "flags": {
       "required": ["OPENSHIFT_DEPLOYMENTCONFIG"]
@@ -284,7 +251,7 @@
         "version": "v1",
         "kind": "StatefulSet"
       },
-      "provider": { "$codeRef": "actions.useStatefulSetActionsProvider" }
+      "provider": { "$codeRef": "statefulSetProvider.useStatefulSetActionsProvider" }
     }
   },
   {
@@ -295,7 +262,7 @@
         "version": "v1",
         "kind": "DaemonSet"
       },
-      "provider": { "$codeRef": "actions.useDaemonSetActionsProvider" }
+      "provider": { "$codeRef": "daemonSetActionsProvider.useDaemonSetActionsProvider" }
     }
   },
   {
@@ -306,7 +273,7 @@
         "version": "v1",
         "kind": "Job"
       },
-      "provider": { "$codeRef": "actions.useJobActionsProvider" }
+      "provider": { "$codeRef": "jobProvider.useJobActionsProvider" }
     }
   },
   {
@@ -317,7 +284,7 @@
         "version": "v1",
         "kind": "CronJob"
       },
-      "provider": { "$codeRef": "actions.useCronJobActionsProvider" }
+      "provider": { "$codeRef": "cronJobProvider.useCronJobActionsProvider" }
     }
   },
   {
@@ -327,7 +294,7 @@
         "version": "v1",
         "kind": "Pod"
       },
-      "provider": { "$codeRef": "actions.usePodActionsProvider" }
+      "provider": { "$codeRef": "podProvider.usePodActionsProvider" }
     }
   },
   {
@@ -338,7 +305,7 @@
         "version": "v1",
         "kind": "ReplicaSet"
       },
-      "provider": { "$codeRef": "actions.useReplicaSetActionsProvider" }
+      "provider": { "$codeRef": "replicaSetProvider.useReplicaSetActionsProvider" }
     }
   },
   {
@@ -348,7 +315,98 @@
         "version": "v1",
         "kind": "ReplicationController"
       },
-      "provider": { "$codeRef": "actions.useReplicationControllerActionsProvider" }
+      "provider": {
+        "$codeRef": "replicationControllersProvider.useReplicationControllerActionsProvider"
+      }
+    }
+  },
+  {
+    "type": "console.action/resource-provider",
+    "properties": {
+      "model": {
+        "version": "v1",
+        "kind": "PersistentVolumeClaim"
+      },
+      "provider": { "$codeRef": "persistentVolumeClaimsProvider.usePVCActionsProvider" }
+    }
+  },
+  {
+    "type": "console.action/resource-provider",
+    "properties": {
+      "model": {
+        "version": "v1",
+        "kind": "VolumeSnapshot",
+        "group": "snapshot.storage.k8s.io"
+      },
+      "provider": { "$codeRef": "volumeSnapshotProvider.useVolumeSnapshotActionsProvider" }
+    }
+  },
+  {
+    "type": "console.action/resource-provider",
+    "properties": {
+      "model": {
+        "version": "v1",
+        "kind": "StorageClass",
+        "group": "storage.k8s.io"
+      },
+      "provider": { "$codeRef": "storageClassProvider.useStorageClassActions" }
+    }
+  },
+  {
+    "type": "console.action/resource-provider",
+    "properties": {
+      "model": {
+        "version": "v1",
+        "kind": "VolumeSnapshotClass",
+        "group": "snapshot.storage.k8s.io"
+      },
+      "provider": { "$codeRef": "defaultProvider.useDefaultActionsProvider" }
+    }
+  },
+  {
+    "type": "console.action/resource-provider",
+    "properties": {
+      "model": {
+        "version": "v1",
+        "kind": "RoleBinding",
+        "group": "rbac.authorization.k8s.io"
+      },
+      "provider": { "$codeRef": "bindingProvider.useBindingActionsProvider" }
+    }
+  },
+      {
+      "type": "console.action/resource-provider",
+      "properties": {
+        "model": {
+          "version": "v1",
+          "kind": "ClusterRoleBinding",
+          "group": "rbac.authorization.k8s.io"
+        },
+        "provider": { "$codeRef": "bindingProvider.useBindingActionsProvider" }
+      }
+    },
+    {
+      "type": "console.action/resource-provider",
+      "properties": {
+        "model": {
+          "version": "v1",
+          "kind": "Build",
+          "group": "build.openshift.io"
+        },
+        "provider": { "$codeRef": "buildProvider.useBuildActionsProvider" }
+      }
+    },
+  {
+    "type": "console.action/resource-provider",
+    "properties": {
+      "model": {
+        "group": "policy",
+        "version": "v1",
+        "kind": "PodDisruptionBudget"
+      },
+      "provider": {
+        "$codeRef": "podDisruptionBudgetProvider.usePodDisruptionBudgetActionsProvider"
+      }
     }
   },
 
@@ -357,7 +415,7 @@
     "properties": {
       "exact": true,
       "path": ["/cluster-configuration", "/cluster-configuration/:group"],
-      "component": { "$codeRef": "clusterConfiguration.ClusterConfigurationPage" }
+      "component": { "$codeRef": "ClusterConfigurationPage" }
     }
   },
 
@@ -366,14 +424,14 @@
     "properties": {
       "exact": true,
       "path": ["/cluster-configuration", "/cluster-configuration/:group"],
-      "component": { "$codeRef": "clusterConfiguration.ClusterConfigurationPage" }
+      "component": { "$codeRef": "ClusterConfigurationPage" }
     }
   },
 
   {
     "type": "console.flag/hookProvider",
     "properties": {
-      "handler": { "$codeRef": "actions.useDeveloperPerspectiveStateProvider" }
+      "handler": { "$codeRef": "perspectiveStateProvider.useDeveloperPerspectiveStateProvider" }
     }
   },
   {
@@ -466,6 +524,12 @@
     }
   },
   {
+    "type": "console.flag/hookProvider",
+    "properties": {
+      "handler": { "$codeRef": "usePerspectivesAvailable.usePerspectivesAvailable" }
+    }
+  },
+  {
     "type": "console.user-preference/group",
     "properties": {
       "id": "general",
@@ -524,9 +588,12 @@
       "description": "%console-app~If a perspective is not selected, the console defaults to the last viewed.%",
       "field": {
         "type": "custom",
-        "component": { "$codeRef": "userPreferences.PreferredPerspectiveSelect" }
+        "component": { "$codeRef": "PreferredPerspectiveSelect" }
       },
       "insertAfter": "console.theme"
+    },
+    "flags": {
+      "required": ["FLAG_PERSPECTIVES_AVAILABLE"]
     }
   },
   {
@@ -538,7 +605,7 @@
       "description": "%console-app~If a project is not selected, the console defaults to the last viewed.%",
       "field": {
         "type": "custom",
-        "component": { "$codeRef": "userPreferences.NamespaceDropdown" }
+        "component": { "$codeRef": "NamespaceDropdown" }
       },
       "insertBefore": "topology.preferredView"
     }
@@ -616,7 +683,7 @@
       "description": "%console-app~Select the language you want to use for the console.%",
       "field": {
         "type": "custom",
-        "component": { "$codeRef": "userPreferences.LanguageDropdown" }
+        "component": { "$codeRef": "LanguageDropdown" }
       }
     }
   },
@@ -646,17 +713,21 @@
       "perspective": "admin",
       "id": "home",
       "name": "%console-app~Home%",
-      "dataAttributes": { "data-quickstart-id": "qs-nav-home" }
+      "dataAttributes": { "data-quickstart-id": "qs-nav-home", "data-tour-id": "tour-home-nav" }
     }
   },
   {
     "type": "console.navigation/section",
     "properties": {
+      "id": "ecosystem",
       "perspective": "admin",
-      "id": "operators",
-      "name": "%console-app~Operators%",
-      "dataAttributes": { "data-quickstart-id": "qs-nav-operators" },
-      "insertAfter": "home"
+      "section": "ecosystem",
+      "name": "%console-app~Ecosystem%",
+      "insertAfter": "operators",
+      "dataAttributes": {
+        "data-quickstart-id": "qs-nav-ecosystem",
+        "data-tour-id": "tour-ecosystem-nav"
+      }
     }
   },
   {
@@ -665,8 +736,11 @@
       "perspective": "admin",
       "id": "workloads",
       "name": "%console-app~Workloads%",
-      "dataAttributes": { "data-quickstart-id": "qs-nav-workloads" },
-      "insertAfter": "operators"
+      "dataAttributes": {
+        "data-quickstart-id": "qs-nav-workloads",
+        "data-tour-id": "tour-workloads-nav"
+      },
+      "insertAfter": "helm"
     }
   },
   {
@@ -736,9 +810,6 @@
       "dataAttributes": {
         "data-quickstart-id": "qs-nav-monitoring"
       }
-    },
-    "flags": {
-      "required": ["PROMETHEUS", "MONITORING", "CAN_GET_NS"]
     }
   },
   {
@@ -804,6 +875,21 @@
       "name": "%console-app~Events%",
       "href": "/events",
       "prefixNamespaced": true
+    }
+  },
+  {
+    "type": "console.navigation/resource-ns",
+    "properties": {
+      "id": "operators",
+      "section": "ecosystem",
+      "name": "%console-app~Installed Operators%",
+      "insertAfter": "developer-catalog",
+      "model": {
+        "kind": "ClusterServiceVersion",
+        "version": "v1alpha1",
+        "group": "operators.coreos.com"
+      },
+      "startsWith": ["operators.coreos.com", "clusterserviceversions"]
     }
   },
   {
@@ -1158,19 +1244,7 @@
     "properties": {
       "perspective": "admin",
       "section": "compute",
-      "id": "machinesets",
-      "insertAfter": "machines",
-      "name": "%console-app~MachineSets%",
-      "href": "/k8s/ns/openshift-machine-api/machine.openshift.io~v1beta1~MachineSet"
-    },
-    "flags": { "required": ["CLUSTER_API"] }
-  },
-  {
-    "type": "console.navigation/href",
-    "properties": {
-      "perspective": "admin",
-      "section": "compute",
-      "id": "machzineautoscaler",
+      "id": "machineautoscaler",
       "insertAfter": "machinesets",
       "name": "%console-app~MachineAutoscalers%",
       "href": "/k8s/ns/openshift-machine-api/autoscaling.openshift.io~v1beta1~MachineAutoscaler"
@@ -1183,7 +1257,7 @@
       "perspective": "admin",
       "section": "compute",
       "id": "machinehealthchecks",
-      "insertAfter": "machzineautoscaler",
+      "insertAfter": "machineautoscaler",
       "name": "%console-app~MachineHealthChecks%",
       "href": "/k8s/ns/openshift-machine-api/machine.openshift.io~v1beta1~MachineHealthCheck"
     },
@@ -1198,6 +1272,41 @@
       "insertAfter": "machinehealthchecks",
       "testID": "ComputeSeparator"
     },
+    "flags": { "required": ["CLUSTER_API"] }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "perspective": "admin",
+      "section": "compute",
+      "id": "controlplanemachinesets",
+      "insertAfter": "computeseparator",
+      "name": "%console-app~ControlPlaneMachineSets%",
+      "href": "/k8s/ns/openshift-machine-api/machine.openshift.io~v1~ControlPlaneMachineSet"
+    },
+    "flags": { "required": ["CLUSTER_API"] }
+  },
+  {
+    "type": "console.navigation/href",
+    "properties": {
+      "perspective": "admin",
+      "section": "compute",
+      "id": "machinesets",
+      "insertAfter": "controlplanemachinesets",
+      "name": "%console-app~MachineSets%",
+      "href": "/k8s/ns/openshift-machine-api/machine.openshift.io~v1beta1~MachineSet"
+    },
+    "flags": { "required": ["CLUSTER_API"] }
+  },
+  {
+    "type": "console.navigation/separator",
+    "properties": {
+      "perspective": "admin",
+      "section": "compute",
+      "id": "computeseparator2",
+      "insertAfter": "machinesets",
+      "testID": "ComputeSeparator2"
+    },
     "flags": { "required": ["MACHINE_CONFIG"] }
   },
   {
@@ -1206,7 +1315,7 @@
       "perspective": "admin",
       "section": "compute",
       "id": "machineconfigs",
-      "insertAfter": "computeseparator",
+      "insertAfter": "computeseparator2",
       "name": "%console-app~MachineConfigs%",
       "model": {
         "group": "machineconfiguration.openshift.io",
@@ -1320,8 +1429,8 @@
       "startsWith": [
         "settings/idp",
         "config.openshift.io",
-        "monitoring/alertmanagerconfig",
-        "monitoring/alertmanageryaml"
+        "settings/cluster/alertmanagerconfig",
+        "settings/cluster/alertmanageryaml"
       ]
     },
     "flags": { "required": ["CLUSTER_VERSION"] }
@@ -1390,9 +1499,9 @@
     "type": "console.dashboards/overview/health/resource",
     "properties": {
       "title": "%console-app~Dynamic Plugins%",
-      "resources": { "$codeRef": "dynamicPluginsHealthResource.dynamicPluginsResources" },
-      "healthHandler": { "$codeRef": "dynamicPluginsHealthResource.getDynamicPluginHealthState" },
-      "popupComponent": { "$codeRef": "dynamicPluginsHealthResource.DynamicPluginsPopover" },
+      "resources": { "$codeRef": "DynamicPluginsPopover.dynamicPluginsResources" },
+      "healthHandler": { "$codeRef": "getDynamicPluginHealthState.getDynamicPluginHealthState" },
+      "popupComponent": { "$codeRef": "DynamicPluginsPopover" },
       "popupTitle": "%console-app~Dynamic Plugin status%"
     }
   },
@@ -1859,16 +1968,16 @@
     "type": "console.node/status",
     "properties": {
       "title": "%console-app~Scheduling disabled%",
-      "PopoverContent": { "$codeRef": "nodeStatus.MarkAsSchedulablePopover" },
-      "isActive": { "$codeRef": "nodeStatus.isUnschedulableActive" }
+      "PopoverContent": { "$codeRef": "SchedulableStatus.MarkAsSchedulablePopover" },
+      "isActive": { "$codeRef": "SchedulableStatus.isUnschedulableActive" }
     }
   },
   {
     "type": "console.node/status",
     "properties": {
       "title": "%console-app~Approval required%",
-      "PopoverContent": { "$codeRef": "nodeStatus.ServerCSRPopoverContent" },
-      "isActive": { "$codeRef": "nodeStatus.isCSRActive" },
+      "PopoverContent": { "$codeRef": "CSRStatus.ServerCSRPopoverContent" },
+      "isActive": { "$codeRef": "CSRStatus.isCSRActive" },
       "resources": {
         "csrs": {
           "groupVersionKind": {

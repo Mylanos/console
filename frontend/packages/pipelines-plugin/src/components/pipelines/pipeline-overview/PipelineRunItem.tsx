@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Grid, GridItem } from '@patternfly/react-core';
+import { Grid, GridItem, ListItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom-v5-compat';
 import { resourcePath } from '@console/internal/components/utils';
@@ -32,7 +32,7 @@ const PipelineRunItem: React.FC<PipelineRunItemProps> = ({ pipelineRun }) => {
   const logDetails = getPLRLogSnippet(pipelineRun, taskRuns);
 
   return (
-    <li className="odc-pipeline-run-item list-group-item">
+    <ListItem className="odc-pipeline-run-item">
       <Grid hasGutter>
         <GridItem span={6}>
           <div>
@@ -40,8 +40,8 @@ const PipelineRunItem: React.FC<PipelineRunItemProps> = ({ pipelineRun }) => {
             {lastUpdated && (
               <>
                 {' '}
-                <span className="odc-pipeline-run-item__time text-muted">
-                  ({fromNow(lastUpdated)})
+                <span className="odc-pipeline-run-item__time pf-v6-u-text-color-subtle">
+                  ({fromNow(lastUpdated || '')})
                 </span>
               </>
             )}
@@ -54,7 +54,7 @@ const PipelineRunItem: React.FC<PipelineRunItemProps> = ({ pipelineRun }) => {
           <Link to={`${path}/logs`}>{t('pipelines-plugin~View logs')}</Link>
         </GridItem>
         {logDetails && (
-          <GridItem span={12}>
+          <GridItem>
             <LogSnippetBlock logDetails={logDetails} namespace={namespace}>
               {(logSnippet: string) => (
                 <LogSnippet message={logDetails.title} logSnippet={logSnippet} />
@@ -63,7 +63,7 @@ const PipelineRunItem: React.FC<PipelineRunItemProps> = ({ pipelineRun }) => {
           </GridItem>
         )}
       </Grid>
-    </li>
+    </ListItem>
   );
 };
 

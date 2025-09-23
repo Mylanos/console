@@ -202,12 +202,29 @@ When(
         numOfPipelineRunsBeforeDeletion = $ele.length;
       });
     pipelineRunsPage.selectKebabMenu(pipelineName);
-    cy.byTestActionID(pipelineActions.DeletePipelineRun).click({ force: true });
+    cy.get(`[data-test-action="${pipelineActions.DeletePipelineRun}"] button`)
+      .eq(0)
+      .click({ force: true });
   },
 );
 
 Then('pipeline run is deleted from pipeline runs page', () => {
   navigateTo(devNavigationMenu.Pipelines);
+  cy.byLegacyTestID('flow').click();
+  cy.get(pipelineDetailsPO.pipelineRunsTab).click();
+  cy.get(pipelineRunsPO.pipelineRunsTable.table)
+    .find('tr')
+    .then(($ele) => {
+      numOfPipelineRunsAfterDeletion = $ele.length;
+      expect(numOfPipelineRunsAfterDeletion).toBeLessThan(numOfPipelineRunsBeforeDeletion);
+    });
+});
+
+Then('pipeline run is deleted from pipeline runs page in admin view', () => {
+  cy.get('[data-test="nav"][data-quickstart-id="qs-nav-pipelines"]')
+    .should('exist')
+    .click({ force: true });
+  cy.get(pipelinesPO.pipelinesTab).click();
   cy.byLegacyTestID('flow').click();
   cy.get(pipelineDetailsPO.pipelineRunsTab).click();
   cy.get(pipelineRunsPO.pipelineRunsTable.table)
@@ -467,7 +484,7 @@ When('user clicks Show VolumeClaimTemplate options', () => {
 
 When('user selects Storage Class as {string} from dropdown', (storageClassName: string) => {
   cy.byTestID('storageclass-dropdown').click();
-  cy.byLegacyTestID('dropdown-text-filter').type(storageClassName);
+  cy.byTestID('console-select-search-input').type(storageClassName);
   cy.get(`[id="${storageClassName}-link"]`).click();
 });
 
@@ -492,7 +509,9 @@ Then('user will see VolumeClaimTemplate Workspace in Pipeline Run Details page',
 });
 
 Then('user will see Empty Directory in Pipeline Run Details page', () => {
-  cy.get(pipelineRunDetailsPO.details.workspacesResources.emptyDirectory).should('be.visible');
+  cy.get(pipelineRunDetailsPO.details.workspacesResources.emptyDirectory)
+    .scrollIntoView()
+    .should('be.visible');
 });
 
 When('user clicks on Start', () => {
@@ -509,7 +528,7 @@ Then(
       'PersistentVolumeClaim',
       'VolumeClaimTemplate',
     ];
-    cy.byLegacyTestID('dropdown-menu').each(($el) => {
+    cy.byTestID('console-select-item').each(($el) => {
       expect(options).toContain($el.text());
     });
     modal.cancel();

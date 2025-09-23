@@ -1,9 +1,8 @@
 import * as React from 'react';
-import { FormGroup, Alert } from '@patternfly/react-core';
+import { FormGroup, Alert, Radio } from '@patternfly/react-core';
 import { useField, useFormikContext, FormikValues } from 'formik';
 import { useTranslation } from 'react-i18next';
 import { AccessModeSelector } from '@console/app/src/components/access-modes/access-mode';
-import { RadioInput } from '@console/internal/components//radio';
 import {
   getVolumeModeRadios,
   initialAccessModes,
@@ -146,7 +145,7 @@ const VolumeClaimTemplateForm: React.FC<VolumeClaimTemplateFormProps> = ({
           />
         </div>
         <div className="odc-VolumeClaimTemplateForm--section">
-          <label className="control-label co-required" htmlFor="request-size-input">
+          <label className="co-required" htmlFor="request-size-input">
             {t('pipelines-plugin~Size')}
           </label>
           <RequestSizeInput
@@ -166,19 +165,23 @@ const VolumeClaimTemplateForm: React.FC<VolumeClaimTemplateFormProps> = ({
             <p className="help-block">{t('pipelines-plugin~Desired storage capacity')}</p>
           )}
         </div>
-        <div className="odc-VolumeClaimTemplateForm--section">
-          <label className="control-label" htmlFor="volume-mode">
-            {t('pipelines-plugin~Volume Mode')}
-          </label>
-          <FormGroup fieldId="volumeMode" data-test-id="volumeModeRadio">
+        <div className="odc-VolumeClaimTemplateForm--section pf-v6-c-form">
+          <FormGroup
+            role="radiogroup"
+            fieldId="volume-mode"
+            label={t('pipelines-plugin~Volume Mode')}
+            isInline
+            className="pf-v6-c-form__group-control--no-row-gap"
+            data-test-id="volumeModeRadio"
+          >
             {getVolumeModeRadios().map((radio) => (
-              <RadioInput
-                {...radio}
+              <Radio
                 key={radio.value}
+                id={`${name}.volumeMode`}
+                name="volumeMode"
+                {...radio}
                 onChange={handleVolumeMode}
-                inline
-                checked={radio.value === volumeMode}
-                name={`${name}.volumeMode`}
+                isChecked={radio.value === volumeMode}
               />
             ))}
           </FormGroup>

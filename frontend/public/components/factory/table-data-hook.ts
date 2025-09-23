@@ -1,13 +1,11 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import * as _ from 'lodash';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useSelector } from 'react-redux';
 import { createSelectorCreator, defaultMemoize } from 'reselect';
 import { SortByDirection } from '@patternfly/react-table';
 import { useDeepCompareMemoize } from '@console/shared/src/hooks/deep-compare-memoize';
 import { RowFilter } from '@console/dynamic-plugin-sdk/src/extensions/console-types';
-import { useExactSearch } from '@console/app/src/components/user-preferences/search';
+import { useExactSearch } from '@console/app/src/components/user-preferences/search/useExactSearch';
 import { RootState } from '../../redux';
 import { tableFilters } from './table-filters';
 import { Filter } from './table';
@@ -90,7 +88,7 @@ export const useTableData = ({
 
   const [isExactSearch] = useExactSearch();
 
-  const tableSelectorCreator = React.useMemo(
+  const tableSelectorCreator = useMemo(
     () =>
       createSelectorCreator(
         defaultMemoize as any,
@@ -101,7 +99,7 @@ export const useTableData = ({
 
   const listId = reduxIDs ? reduxIDs.join(',') : reduxID;
 
-  const sortSelector = React.useMemo(
+  const sortSelector = useMemo(
     () =>
       tableSelectorCreator(
         (state: RootState) => state.UI.getIn(['listSorts', listId]),
@@ -118,7 +116,7 @@ export const useTableData = ({
     sortSelector,
   );
 
-  return React.useMemo(() => {
+  return useMemo(() => {
     const allFilters = staticFilters ? Object.assign({}, filters, ...staticFilters) : filters;
     const data = getFilteredRows(allFilters, rowFilters, propData, isExactSearch);
 

@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 export const IDPNameInput: React.FC<IDPNameInputProps> = ({ value, onChange }) => {
   const { t } = useTranslation();
   return (
-    <div className="form-group">
-      <label className="control-label co-required" htmlFor="idp-name">
+    <div className="form-group" data-testid="idp-name-form">
+      <label className="co-required" htmlFor="idp-name">
         {t('public~Name')}
       </label>
       <span className="pf-v6-c-form-control">
@@ -14,6 +14,7 @@ export const IDPNameInput: React.FC<IDPNameInputProps> = ({ value, onChange }) =
           onChange={onChange}
           value={value}
           aria-describedby="idp-name-help"
+          aria-label={t('public~Name')}
           id="idp-name"
           required
         />

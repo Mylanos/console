@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { mount, ReactWrapper } from 'enzyme';
 import { Provider } from 'react-redux';
 import { useProjectOrNamespaceModel } from '@console/internal/components/utils';
@@ -36,7 +35,7 @@ const mockUsePreferredNamespace = usePreferredNamespace as jest.Mock;
 
 describe('NamespaceDropdown', () => {
   let wrapper: ReactWrapper;
-  const preferredNamespace: string = mockNamespaces[1].metadata.name;
+  const preferredNamespace: string = mockNamespaces[1].metadata?.name || '';
 
   afterEach(() => {
     jest.resetAllMocks();

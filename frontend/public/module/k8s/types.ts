@@ -198,7 +198,7 @@ export type ContainerSpec = {
   lifecycle?: ContainerLifecycle;
   resources?: {
     limits?: ResourceList;
-    requested?: ResourceList;
+    requests?: ResourceList;
   };
   ports?: ContainerPort[];
   imagePullPolicy?: ImagePullPolicy;
@@ -392,9 +392,14 @@ type DescribedObject = {
   name: string;
 };
 export type HPAMetric = {
-  type: 'Object' | 'Pods' | 'Resource' | 'External';
+  type: 'Object' | 'Pods' | 'Resource' | 'External' | 'ContainerResource';
   resource?: {
     name: string;
+    target: TargetObjcet;
+  };
+  containerResource?: {
+    name: string;
+    container: string;
     target: TargetObjcet;
   };
   external?: {
@@ -489,7 +494,7 @@ export type JobTemplate = {
     backoffLimit?: number;
     completions?: number;
     manualSelector?: boolean;
-    parallelism?: boolean;
+    parallelism?: number;
     selector?: Selector;
     template: PodTemplate;
     ttlSecondsAfterFinished?: number;
@@ -534,6 +539,17 @@ export type CronJobKind = {
     }[];
     lastScheduleTime?: string;
   };
+};
+
+export type CRDAdditionalPrinterColumn = {
+  name: string;
+  type: string;
+  jsonPath: string;
+  description?: string;
+};
+
+export type CRDAdditionalPrinterColumns = {
+  [key: string]: CRDAdditionalPrinterColumn[];
 };
 
 export type CRDVersion = {
@@ -717,6 +733,27 @@ export type MachineSetKind = {
     fullyLabeledReplicas: number;
     readyReplicas: number;
     replicas: number;
+  };
+} & K8sResourceCommon;
+
+export type ControlPlaneMachineSetKind = {
+  spec: {
+    replicas: number;
+    selector: Selector;
+    state?: string;
+    strategy?: {
+      type?: string;
+    };
+    template: {
+      machineType: string;
+    };
+  };
+  status: {
+    replicas?: number;
+    readyReplicas?: number;
+    updatedReplicas?: number;
+    unavailableReplicas?: number;
+    conditions?: K8sResourceCondition[];
   };
 } & K8sResourceCommon;
 
@@ -1094,46 +1131,68 @@ export type PersistentVolumeClaimKind = K8sResourceCommon & {
     };
     storageClassName: string;
     volumeMode?: string;
+    volumeName?: string;
     /* Parameters in a cloned PVC */
     dataSource?: {
       name: string;
       kind: string;
       apiGroup: string;
     };
+    selector?: Selector;
     /**/
   };
   status?: {
+    accessModes?: string[];
+    capacity?: { storage: string };
+    phase: string;
+    conditions?: K8sResourceCondition[];
+  };
+};
+
+export type PersistentVolumeKind = K8sResourceCommon & {
+  spec: {
+    storageClassName?: string;
+    claimRef?: {
+      namespace: string;
+      name: string;
+    };
+    capacity: { storage: string };
+    storage: string;
+    accessModes: string[];
+    persistentVolumeReclaimPolicy: string;
+    volumeMode?: string;
+    csi?: {
+      driver: string;
+      volumeHandle: string;
+      fsType?: string;
+      readOnly?: boolean;
+      volumeAttributes?: { [key: string]: string };
+      nodeStageSecretRef?: { name: string; namespace: string };
+      nodePublishSecretRef?: { name: string; namespace: string };
+    };
+  };
+  status: {
     phase: string;
   };
 };
 
-export type NetworkPolicyKind = K8sResourceCommon & {
+export type ConsoleLinkKind = K8sResourceCommon & {
   spec: {
-    podSelector?: Selector;
-    ingress?: {
-      from?: NetworkPolicyPeer[];
-      ports?: NetworkPolicyPort[];
-    }[];
-    egress?: {
-      to?: NetworkPolicyPeer[];
-      ports?: NetworkPolicyPort[];
-    }[];
-    policyTypes?: string[];
+    applicationMenu?: {
+      imageURL?: string;
+      section: string;
+    };
+    href: string;
+    location: 'ApplicationMenu' | 'HelpMenu' | 'UserMenu' | 'NamespaceDashboard';
+    namespaceDashboard?: {
+      namespaceSelector?: {
+        matchExpressions?: { key?: string; operator?: string; values?: string[] }[];
+        matchLabels?: { [key: string]: string };
+      };
+      namespaces?: string[];
+    };
+    text: string;
   };
-};
-
-export type NetworkPolicyPeer = {
-  podSelector?: Selector;
-  namespaceSelector?: Selector;
-  ipBlock?: {
-    cidr: string;
-    except?: string[];
-  };
-};
-
-export type NetworkPolicyPort = {
-  port?: string | number;
-  protocol?: string;
 };
 
 export type ConsolePluginKind = K8sResourceCommon & {
@@ -1236,3 +1295,27 @@ type EndpointSlice = {
 export type EndpointSliceKind = {
   endpoints?: EndpointSlice[];
 } & K8sResourceCommon;
+
+export type RoleRef = {
+  kind: string;
+  name: string;
+  apiGroup: string;
+};
+
+export type Subject = {
+  kind: string;
+  name: string;
+  namespace?: string;
+};
+
+export type RoleBindingKind = {
+  subjectIndex: number;
+  subjects: Subject[];
+  roleRef: RoleRef;
+} & K8sResourceKind;
+
+export type ClusterRoleBindingKind = {
+  subjectIndex: number;
+  subjects: Subject[];
+  roleRef: RoleRef;
+} & K8sResourceKind;

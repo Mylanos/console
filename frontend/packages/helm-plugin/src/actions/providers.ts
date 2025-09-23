@@ -1,7 +1,7 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import { GraphElement, isGraph, Node } from '@patternfly/react-topology';
 import { useTranslation } from 'react-i18next';
-import { getCommonResourceActions } from '@console/app/src/actions/creators/common-factory';
+import { useCommonResourceActions } from '@console/app/src/actions//hooks/useCommonResourceActions';
 import { getDisabledAddActions } from '@console/dev-console/src/utils/useAddActionExtensions';
 import { Action } from '@console/dynamic-plugin-sdk';
 import { SetFeatureFlag, useK8sModel } from '@console/dynamic-plugin-sdk/src/lib-core';
@@ -26,7 +26,7 @@ import { HelmActionsScope } from './types';
 
 export const useHelmActionProvider = (scope: HelmActionsScope) => {
   const { t } = useTranslation();
-  const result = React.useMemo(() => {
+  const result = useMemo(() => {
     if (!scope) return [[], true, undefined];
     switch (scope?.release?.info?.status) {
       case HelmReleaseStatus.PendingInstall:
@@ -51,7 +51,7 @@ export const useHelmActionProvider = (scope: HelmActionsScope) => {
 export const useHelmActionProviderForTopology = (element: GraphElement) => {
   const resource = getResource(element);
   const data = element.getData();
-  const scope = React.useMemo(() => {
+  const scope = useMemo(() => {
     const nodeType = element.getType();
     if (nodeType !== TYPE_HELM_RELEASE) return undefined;
     const releaseName = element.getLabel();
@@ -86,7 +86,7 @@ export const useTopologyActionProvider = ({
   const [namespace] = useActiveNamespace();
   const disabledAddActions = getDisabledAddActions();
   const isHelmDisabled = disabledAddActions?.includes(HELM_CHART_ACTION_ID);
-  return React.useMemo(() => {
+  return useMemo(() => {
     if (isGraph(element) && !connectorSource && !isHelmDisabled) {
       return [[AddHelmChartAction(namespace, 'add-to-project', true)], true, undefined];
     }
@@ -97,15 +97,18 @@ export const useTopologyActionProvider = ({
 export const useHelmChartRepositoryActions = (resource: K8sResourceKind) => {
   const [kindObj, inFlight] = useK8sModel(referenceFor(resource));
   const { t } = useTranslation();
-  const actions = React.useMemo(() => {
-    let commonActions = getCommonResourceActions(kindObj, resource);
+  const commonActions = useCommonResourceActions(kindObj, resource);
+  const actions = useMemo(() => {
     const index = commonActions.findIndex((action: Action) => action.id === 'edit-resource');
     if (index >= 0) {
-      commonActions = commonActions.filter((action: Action) => action.id !== 'edit-resource');
-      commonActions.splice(index, 0, editChartRepository(kindObj, resource, t));
+      const modifiedActions = commonActions.filter(
+        (action: Action) => action.id !== 'edit-resource',
+      );
+      modifiedActions.splice(index, 0, editChartRepository(kindObj, resource, t));
+      return modifiedActions;
     }
     return commonActions;
-  }, [kindObj, resource, t]);
+  }, [kindObj, resource, commonActions, t]);
 
   return [actions, !inFlight, undefined];
 };

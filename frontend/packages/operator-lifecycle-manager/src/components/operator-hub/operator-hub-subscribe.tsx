@@ -2,20 +2,23 @@ import * as React from 'react';
 import {
   ActionGroup,
   Alert,
-  AlertActionCloseButton,
+  AlertVariant,
   Button,
   Checkbox,
+  FormGroup,
+  Grid,
+  GridItem,
+  Radio,
   TextInput,
   Title,
 } from '@patternfly/react-core';
 import * as _ from 'lodash';
-import { Helmet } from 'react-helmet';
 import { Trans, useTranslation } from 'react-i18next';
-import { useLocation, Link } from 'react-router-dom-v5-compat';
-import { RadioGroup, RadioInput } from '@console/internal/components/radio';
+import { useLocation, Link, useNavigate } from 'react-router-dom-v5-compat';
+import { useActiveNamespace } from '@console/dynamic-plugin-sdk/src/lib-core';
+import { RadioGroup } from '@console/internal/components/radio';
 import {
   documentationURLs,
-  ExternalLink,
   FieldLevelHelp,
   Firehose,
   getDocumentationURL,
@@ -24,7 +27,6 @@ import {
   isManaged,
   ConsoleEmptyState,
   NsDropdown,
-  PageHeading,
   ResourceIcon,
   resourcePathFromModel,
   StatusBox,
@@ -51,6 +53,11 @@ import {
   referenceForModel,
 } from '@console/internal/module/k8s';
 import { fromRequirements } from '@console/internal/module/k8s/selector';
+import { DismissableAlert } from '@console/shared/src/components/alerts';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import { CONSOLE_OPERATOR_CONFIG_NAME } from '@console/shared/src/constants';
 import { SubscriptionModel, OperatorGroupModel, PackageManifestModel } from '../../models';
 import {
@@ -83,24 +90,6 @@ import {
   getClusterServiceVersionPlugins,
 } from './operator-hub-utils';
 
-export const CloudServiceTokenWarningAlert = ({
-  title,
-  message,
-  onClose,
-}: CloudServiceTokenWarningAlertProps) => {
-  return (
-    <Alert
-      isInline
-      variant="warning"
-      title={title}
-      actionClose={<AlertActionCloseButton onClose={() => onClose(false)} />}
-      className="pf-u-mb-lg"
-    >
-      <p>{message}</p>
-    </Alert>
-  );
-};
-
 const InputField: React.FC<InputFieldProps> = ({
   label,
   helpText,
@@ -114,7 +103,7 @@ const InputField: React.FC<InputFieldProps> = ({
       <fieldset>
         <label className="co-required">{label}</label>
         <FieldLevelHelp>{helpText}</FieldLevelHelp>
-        <div className="co-toolbar__item">
+        <div>
           <TextInput
             autoFocus
             placeholder={placeholder}
@@ -133,6 +122,8 @@ const InputField: React.FC<InputFieldProps> = ({
 
 export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> = (props) => {
   const packageManifest = props.packageManifest?.data?.[0];
+  const navigate = useNavigate();
+  const [activeNamespace] = useActiveNamespace();
   const { name: pkgName } = packageManifest?.metadata ?? {};
   const { provider, channels = [], packageName, catalogSource, catalogSourceNamespace } =
     packageManifest?.status ?? {};
@@ -156,8 +147,6 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
   const { installModes = [], version: currentLatestVersion } = currentCSVDesc ?? {};
 
   const [updateVersion, setUpdateVersion] = React.useState(version || currentLatestVersion);
-
-  const [showCSTokenWarn, setShowCSTokenWarn] = React.useState(true);
 
   const [approval, setApproval] = React.useState(
     updateVersion !== currentLatestVersion
@@ -772,47 +761,55 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
   );
 
   const installedNamespaceOptions = (
-    <div className="form-group">
-      <RadioInput
-        onChange={() => {
-          setUseSuggestedNSForSingleInstallMode(true);
-          setTargetNamespace(operatorSuggestedNamespace);
-        }}
-        value={operatorSuggestedNamespace}
-        checked={useSuggestedNSForSingleInstallMode}
-        title={t('olm~Operator recommended Namespace:')}
-      >
-        {' '}
-        <ResourceIcon kind="Project" />
-        <b>{operatorSuggestedNamespace}</b>
-      </RadioInput>
-      <RadioInput
-        onChange={() => {
-          setUseSuggestedNSForSingleInstallMode(false);
-          setTargetNamespace(null);
-        }}
-        value={operatorSuggestedNamespace}
-        checked={!useSuggestedNSForSingleInstallMode}
-        title={t('olm~Select a Namespace')}
-      />
-      {!useSuggestedNSForSingleInstallMode && (
-        <>
-          <NsDropdown
-            id="dropdown-selectbox"
-            selectedKey={selectedTargetNamespace}
-            onChange={(ns) => setTargetNamespace(ns)}
-            dataTest="dropdown-selectbox"
-          />
-          <Alert
-            isInline
-            className="co-alert pf-v6-c-alert--top-margin"
-            variant="warning"
-            title={t(
-              'olm~Not installing the Operator into the recommended namespace can cause unexpected behavior.',
-            )}
-          />
-        </>
-      )}
+    <div className="pf-v6-c-form">
+      <FormGroup role="radiogroup" fieldId="operator-namespace" isStack className="form-group">
+        <Radio
+          id="operator-namespace-recommended"
+          name="operator-namespace"
+          value={operatorSuggestedNamespace}
+          label={
+            <>
+              {t('olm~Operator recommended Namespace:')} <ResourceIcon kind="Project" />
+              <b>{operatorSuggestedNamespace}</b>
+            </>
+          }
+          onChange={() => {
+            setUseSuggestedNSForSingleInstallMode(true);
+            setTargetNamespace(operatorSuggestedNamespace);
+          }}
+          isChecked={useSuggestedNSForSingleInstallMode}
+          data-checked-state={useSuggestedNSForSingleInstallMode}
+        />
+        <Radio
+          id="operator-namespace-select"
+          name="operator-namespace"
+          value={operatorSuggestedNamespace}
+          label={t('olm~Select a Namespace')}
+          onChange={() => {
+            setUseSuggestedNSForSingleInstallMode(false);
+            setTargetNamespace(null);
+          }}
+          isChecked={!useSuggestedNSForSingleInstallMode}
+          data-checked-state={!useSuggestedNSForSingleInstallMode}
+        />
+        {!useSuggestedNSForSingleInstallMode && (
+          <>
+            <NsDropdown
+              id="dropdown-selectbox"
+              selectedKey={selectedTargetNamespace}
+              onChange={(ns) => setTargetNamespace(ns)}
+              dataTest="dropdown-selectbox"
+            />
+            <Alert
+              isInline
+              variant="warning"
+              title={t(
+                'olm~Not installing the Operator into the recommended namespace can cause unexpected behavior.',
+              )}
+            />
+          </>
+        )}
+      </FormGroup>
     </div>
   );
 
@@ -854,49 +851,56 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
 
   return (
     <>
-      <Helmet>
-        <title>Operator Installation</title>
-      </Helmet>
+      <DocumentTitle>Operator Installation</DocumentTitle>
       <PageHeading
         title={t('olm~Install Operator')}
         breadcrumbs={[
-          { name: t('olm~OperatorHub'), path: `/operatorhub?${search.toString()}` },
+          {
+            name: t('olm~Software Catalog'),
+            path: `/catalog/ns/${activeNamespace}?catalogType=operator&${search.toString()}`,
+          },
           { name: t('olm~Operator Installation'), path: url },
         ]}
         helpText={t(
           'olm~Install your Operator by subscribing to one of the update channels to keep the Operator up to date. The strategy determines either manual or automatic updates.',
         )}
       />
-      <div className="co-m-pane__body">
-        {tokenizedAuth === 'AWS' && showCSTokenWarn && (
-          <CloudServiceTokenWarningAlert
+      <PaneBody>
+        {tokenizedAuth === 'AWS' && (
+          <DismissableAlert
+            className="pf-v6-u-mb-md"
             title={t('olm~Cluster in STS Mode')}
-            message={t(
+            variant={AlertVariant.warning}
+          >
+            {t(
               'olm~This cluster is using AWS Security Token Service to reach the cloud API. In order for this operator to take the actions it requires directly with the cloud API, you will need to provide a role ARN (with an attached policy) during installation. Manual subscriptions are highly recommended as steps should be taken prior to upgrade to ensure that the permissions required by the next version are properly accounted for in the role. Please see the operator description for more details.',
             )}
-            onClose={() => setShowCSTokenWarn(false)}
-          />
+          </DismissableAlert>
         )}
-        {tokenizedAuth === 'Azure' && showCSTokenWarn && (
-          <CloudServiceTokenWarningAlert
+        {tokenizedAuth === 'Azure' && (
+          <DismissableAlert
+            className="pf-v6-u-mb-md"
             title={t('olm~Cluster in Azure Workload Identity / Federated Identity Mode')}
-            message={t(
+            variant={AlertVariant.warning}
+          >
+            {t(
               'olm~This cluster is using Azure Workload Identity / Federated Identity to reach the cloud API. In order for this operator to take the actions it requires directly with the cloud API, provide the Client ID, Tenant ID, and Subscription ID during installation. Manual subscriptions are highly recommended as steps should be taken before upgrade to ensure that the permissions required by the next version are properly accounted for in the role. See the operator description for more details.',
             )}
-            onClose={() => setShowCSTokenWarn(false)}
-          />
-        )}{' '}
-        {tokenizedAuth === 'GCP' && showCSTokenWarn && (
-          <CloudServiceTokenWarningAlert
+          </DismissableAlert>
+        )}
+        {tokenizedAuth === 'GCP' && (
+          <DismissableAlert
             title={t('olm~Cluster in GCP Workload Identity / Federated Identity Mode')}
-            message={t(
+            variant={AlertVariant.warning}
+            className="pf-v6-u-mb-md"
+          >
+            {t(
               'olm~This cluster is using GCP Workload Identity / Federated Identity to reach the cloud API. In order for this operator to take the actions it requires directly with the cloud API, provide the Pool ID, Provider ID, and Service Account Email during installation. Manual subscriptions are highly recommended as steps should be taken before upgrade to ensure that the permissions required by the next version are properly accounted for in the role. See the operator description for more details.',
             )}
-            onClose={() => setShowCSTokenWarn(false)}
-          />
+          </DismissableAlert>
         )}
-        <div className="row">
-          <div className="col-xs-6">
+        <Grid hasGutter>
+          <GridItem span={6}>
             <>
               {tokenizedAuth === 'AWS' && (
                 <div className="form-group">
@@ -1005,7 +1009,7 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
                   />
                 </fieldset>
               </div>
-              <div className="form-group form-group--doubled-bottom-margin">
+              <div className="form-group">
                 <fieldset>
                   <label className="co-required">{t('olm~Version')}</label>
                   <OperatorVersionSelect
@@ -1017,49 +1021,61 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
                   />
                 </fieldset>
               </div>
-              <div className="form-group">
+              <div className="pf-v6-c-form">
                 <fieldset>
                   <label className="co-required">{t('olm~Installation mode')}</label>
-                  <RadioInput
-                    onChange={(e) => {
-                      setInstallMode(e.target.value);
-                      setTargetNamespace(null);
-                      setCannotResolve(false);
-                    }}
-                    value={InstallModeType.InstallModeTypeAllNamespaces}
-                    checked={selectedInstallMode === InstallModeType.InstallModeTypeAllNamespaces}
-                    disabled={!supportsGlobal}
-                    title={t('olm~All namespaces on the cluster')}
-                    subTitle={t('olm~(default)')}
+                  <FormGroup
+                    role="radiogroup"
+                    fieldId="operator-install-mode"
+                    isStack
+                    className="form-group"
                   >
-                    <div className="co-m-radio-desc">
-                      <p className="text-muted">
-                        {descFor(InstallModeType.InstallModeTypeAllNamespaces)}
-                      </p>
-                    </div>
-                  </RadioInput>
-                  <RadioInput
-                    onChange={(e) => {
-                      setInstallMode(e.target.value);
-                      setTargetNamespace(
-                        useSuggestedNSForSingleInstallMode ? operatorSuggestedNamespace : null,
-                      );
-                      setCannotResolve(false);
-                    }}
-                    value={InstallModeType.InstallModeTypeOwnNamespace}
-                    checked={selectedInstallMode === InstallModeType.InstallModeTypeOwnNamespace}
-                    disabled={!supportsSingle}
-                    title={t('olm~A specific namespace on the cluster')}
-                  >
-                    <div className="co-m-radio-desc">
-                      <p className="text-muted">
-                        {descFor(InstallModeType.InstallModeTypeOwnNamespace)}
-                      </p>
-                    </div>
-                  </RadioInput>
+                    <Radio
+                      id="operator-install-mode-all-namespaces"
+                      name="operator-install-mode"
+                      value={InstallModeType.InstallModeTypeAllNamespaces}
+                      label={`${t('olm~All namespaces on the cluster')} ${t('olm~(default)')}`}
+                      description={descFor(InstallModeType.InstallModeTypeAllNamespaces)}
+                      onChange={(e) => {
+                        setInstallMode((e.target as HTMLInputElement).value);
+                        setTargetNamespace(null);
+                        setCannotResolve(false);
+                      }}
+                      isChecked={
+                        selectedInstallMode === InstallModeType.InstallModeTypeAllNamespaces
+                      }
+                      data-checked-state={
+                        selectedInstallMode === InstallModeType.InstallModeTypeAllNamespaces
+                      }
+                      isDisabled={!supportsGlobal}
+                      data-test="All namespaces on the cluster-radio-input"
+                    />
+                    <Radio
+                      id="operator-install-mode-own-namespace"
+                      name="operator-install-mode"
+                      value={InstallModeType.InstallModeTypeOwnNamespace}
+                      label={t('olm~A specific namespace on the cluster')}
+                      description={descFor(InstallModeType.InstallModeTypeOwnNamespace)}
+                      onChange={(e) => {
+                        setInstallMode((e.target as HTMLInputElement).value);
+                        setTargetNamespace(
+                          useSuggestedNSForSingleInstallMode ? operatorSuggestedNamespace : null,
+                        );
+                        setCannotResolve(false);
+                      }}
+                      isChecked={
+                        selectedInstallMode === InstallModeType.InstallModeTypeOwnNamespace
+                      }
+                      data-checked-state={
+                        selectedInstallMode === InstallModeType.InstallModeTypeOwnNamespace
+                      }
+                      isDisabled={!supportsSingle}
+                      data-test="A specific namespace on the cluster-radio-input"
+                    />
+                  </FormGroup>
                 </fieldset>
               </div>
-              <div className="form-group form-group--doubled-bottom-margin">
+              <div className="form-group">
                 <label className="co-required" htmlFor="dropdown-selectbox">
                   {t('olm~Installed Namespace')}
                 </label>
@@ -1068,7 +1084,12 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
                 {selectedInstallMode === InstallModeType.InstallModeTypeOwnNamespace &&
                   singleNamespaceInstallMode}
               </div>
-              <div className="form-group">
+              <FormGroup
+                role="radiogroup"
+                fieldId="operator-approval"
+                isStack
+                className="form-group"
+              >
                 <fieldset>
                   <label className="co-required">{t('olm~Update approval')}</label>
                   <FieldLevelHelp>
@@ -1078,13 +1099,15 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
                     currentValue={approval}
                     items={[
                       {
+                        name: 'operator-approval-strategy',
                         value: InstallPlanApproval.Automatic,
-                        title: t('olm~Automatic'),
+                        label: t('olm~Automatic'),
                         disabled: isApprovalItemDisabled,
                       },
                       {
+                        name: 'operator-approval-strategy',
                         value: InstallPlanApproval.Manual,
-                        title: t('olm~Manual'),
+                        label: t('olm~Manual'),
                       },
                     ]}
                     onChange={(e) => {
@@ -1127,14 +1150,16 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
                     </Alert>
                   )}
                 </fieldset>
-              </div>
+              </FormGroup>
               {csvPlugins.length > 0 && consoleOperatorConfig && canPatchConsoleOperatorConfig && (
-                <ConsolePluginFormGroup
-                  catalogSource={catalogSource}
-                  csvPlugins={csvPlugins}
-                  enabledPlugins={enabledPlugins}
-                  setPluginEnabled={setPluginEnabled}
-                />
+                <div className="pf-v6-c-form">
+                  <ConsolePluginFormGroup
+                    catalogSource={catalogSource}
+                    csvPlugins={csvPlugins}
+                    enabledPlugins={enabledPlugins}
+                    setPluginEnabled={setPluginEnabled}
+                  />
+                </div>
               )}
             </>
             {deprecatedWarning && (
@@ -1155,12 +1180,12 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
               >
                 {t('olm~Install')}
               </Button>
-              <Button variant="secondary" onClick={() => history.push('/operatorhub')}>
+              <Button variant="secondary" onClick={() => navigate(-1)}>
                 {t('public~Cancel')}
               </Button>
             </ActionGroup>
-          </div>
-          <div className="col-xs-6">
+          </GridItem>
+          <GridItem span={6}>
             <ClusterServiceVersionLogo
               displayName={
                 currentCSVDesc?.displayName || channels?.[0]?.currentCSVDesc?.displayName
@@ -1174,7 +1199,7 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
             </Title>
             <div className="co-crd-card-row">
               {!providedAPIs.length ? (
-                <span className="text-muted">
+                <span className="pf-v6-u-text-color-subtle">
                   {t('olm~No Kubernetes APIs are provided by this Operator.')}
                 </span>
               ) : (
@@ -1189,9 +1214,9 @@ export const OperatorHubSubscribeForm: React.FC<OperatorHubSubscribeFormProps> =
                 ))
               )}
             </div>
-          </div>
-        </div>
-      </div>
+          </GridItem>
+        </Grid>
+      </PaneBody>
     </>
   );
 };
@@ -1202,7 +1227,7 @@ const OperatorHubSubscribe: React.FC<OperatorHubSubscribeFormProps> = (props) =>
   </StatusBox>
 );
 
-export const OperatorHubSubscribePage: React.SFC = (props) => {
+export const OperatorHubSubscribePage: React.FCC = (props) => {
   return (
     <Firehose
       resources={[
@@ -1256,12 +1281,6 @@ type InputFieldProps = {
   ariaLabel: string;
   value: string;
   setValue: (value: string) => void;
-};
-
-type CloudServiceTokenWarningAlertProps = {
-  title: string;
-  message: string;
-  onClose: (value: boolean) => void;
 };
 
 OperatorHubSubscribe.displayName = 'OperatorHubSubscribe';

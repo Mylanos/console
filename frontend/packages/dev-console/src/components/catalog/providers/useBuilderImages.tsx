@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import { TFunction } from 'i18next';
 import * as _ from 'lodash';
 import { Trans, useTranslation } from 'react-i18next';
@@ -17,10 +17,10 @@ import {
   getMostRecentBuilderTag,
   isBuilder,
 } from '@console/internal/components/image-stream';
-import { ExternalLink } from '@console/internal/components/utils';
 import { useK8sWatchResource } from '@console/internal/components/utils/k8s-watch-hook';
 import { K8sResourceKind } from '@console/internal/module/k8s';
 import { ANNOTATIONS } from '@console/shared';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 
 const normalizeBuilderImages = (
   builderImageStreams: K8sResourceKind[],
@@ -28,7 +28,10 @@ const normalizeBuilderImages = (
   t: TFunction,
 ): CatalogItem[] => {
   const normalizedBuilderImages = _.map(builderImageStreams, (imageStream) => {
-    const { uid, name, namespace, annotations } = imageStream.metadata;
+    const uid = imageStream.metadata?.uid || '';
+    const name = imageStream.metadata?.name || '';
+    const namespace = imageStream.metadata?.namespace || '';
+    const annotations = imageStream.metadata?.annotations;
     const tag = getMostRecentBuilderTag(imageStream);
     const displayName = annotations?.[ANNOTATIONS.displayName] ?? name;
     const icon = getImageStreamIcon(tag);
@@ -47,9 +50,7 @@ const normalizeBuilderImages = (
     if (sampleRepo) {
       detailsProperties.push({
         label: t('devconsole~Sample repository'),
-        value: (
-          <ExternalLink href={sampleRepo} additionalClassName="co-break-all" text={sampleRepo} />
-        ),
+        value: <ExternalLink href={sampleRepo} className="co-break-all" text={sampleRepo} />,
       });
     }
 
@@ -114,7 +115,7 @@ const normalizeBuilderImages = (
       },
       icon: {
         url: imgUrl,
-        class: iconClass,
+        class: iconClass || undefined,
       },
       details: {
         properties: detailsProperties,
@@ -142,11 +143,9 @@ const useBuilderImages: ExtensionHook<CatalogItem[]> = ({
     resourceSelector,
   );
 
-  const builderImageStreams = React.useMemo(() => _.filter(imageStreams, isBuilder), [
-    imageStreams,
-  ]);
+  const builderImageStreams = useMemo(() => _.filter(imageStreams, isBuilder), [imageStreams]);
 
-  const normalizedBuilderImages = React.useMemo(
+  const normalizedBuilderImages = useMemo(
     () => normalizeBuilderImages(builderImageStreams, namespace, t),
     [builderImageStreams, namespace, t],
   );

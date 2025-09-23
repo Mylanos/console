@@ -1,7 +1,5 @@
-import * as React from 'react';
+import { useMemo, useEffect } from 'react';
 import { Map as ImmutableMap } from 'immutable';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useSelector, useDispatch } from 'react-redux';
 import * as k8sActions from '../../../app/k8s/actions/k8s';
 import { getReduxIdPayload } from '../../../app/k8s/reducers/k8sSelector';
@@ -33,11 +31,11 @@ export const useK8sWatchResource: UseK8sWatchResource = (initResource) => {
 
   const [k8sModel] = useK8sModel(resource?.groupVersionKind || resource?.kind);
 
-  const reduxID = React.useMemo(() => getIDAndDispatch(resource, k8sModel), [k8sModel, resource]);
+  const reduxID = useMemo(() => getIDAndDispatch(resource, k8sModel), [k8sModel, resource]);
 
   const dispatch = useDispatch();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (reduxID) {
       dispatch(reduxID.dispatch);
     }
@@ -52,7 +50,7 @@ export const useK8sWatchResource: UseK8sWatchResource = (initResource) => {
     reduxID ? getReduxIdPayload(state, reduxID.id) : null,
   );
 
-  return React.useMemo(() => {
+  return useMemo(() => {
     if (!resource) {
       return [undefined, true, undefined];
     }

@@ -1,13 +1,13 @@
 import { act } from 'react-dom/test-utils';
 import { k8sListResourceItems } from '@console/dynamic-plugin-sdk/src/utils/k8s';
-import { testHook } from '../../../../../../../__tests__/utils/hooks-utils';
+import { testHook } from '@console/shared/src/test-utils/hooks-utils';
 import { routeELData } from '../../../../test-data/pac-data';
 import { usePacGHManifest } from '../usePacGHManifest';
 
 const k8sListMock = k8sListResourceItems as jest.Mock;
 
 jest.mock('@console/dynamic-plugin-sdk/src/utils/k8s', () => {
-  const originalModule = (jest as any).requireActual('@console/dynamic-plugin-sdk/src/utils/k8s');
+  const originalModule = jest.requireActual('@console/dynamic-plugin-sdk/src/utils/k8s');
   return {
     ...originalModule,
     k8sListResourceItems: jest.fn(),

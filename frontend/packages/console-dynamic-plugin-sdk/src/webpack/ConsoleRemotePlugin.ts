@@ -11,9 +11,12 @@ import * as _ from 'lodash';
 import * as readPkg from 'read-pkg';
 import * as semver from 'semver';
 import * as webpack from 'webpack';
-import { ConsolePluginBuildMetadata } from '../build-types';
+import { ConsolePluginBuildMetadata, ConsolePluginPackageJSON } from '../build-types';
 import { extensionsFile } from '../constants';
-import { sharedPluginModules, getSharedModuleMetadata } from '../shared-modules';
+import {
+  sharedPluginModules,
+  getSharedModuleMetadata,
+} from '../shared-modules/shared-modules-meta';
 import { DynamicModuleMap, getDynamicModuleMap } from '../utils/dynamic-module-parser';
 import { parseJSONC } from '../utils/jsonc';
 import { loadSchema } from '../utils/schema';
@@ -21,10 +24,6 @@ import { ExtensionValidator } from '../validation/ExtensionValidator';
 import { SchemaValidator } from '../validation/SchemaValidator';
 import { ValidationResult } from '../validation/ValidationResult';
 import { DynamicModuleImportLoaderOptions } from './loaders/dynamic-module-import-loader';
-
-type ConsolePluginPackageJSON = readPkg.PackageJson & {
-  consolePlugin?: ConsolePluginBuildMetadata;
-};
 
 const dynamicModuleImportLoader =
   '@openshift-console/dynamic-plugin-sdk-webpack/lib/webpack/loaders/dynamic-module-import-loader';
@@ -161,8 +160,9 @@ export type ConsoleRemotePluginOptions = Partial<{
    *   resource on the cluster.
    * - `version` must be semver compliant.
    * - `dependencies` values must be valid semver ranges or `*` representing any version.
+   * - `dependencies` and `optionalDependencies` keys must be mutually exclusive.
    *
-   * Additional runtime environment specific dependencies available to Console plugins:
+   * Additional runtime environment specific `dependencies` available to Console plugins:
    *
    * - `@console/pluginAPI` - Console web application. This dependency is matched against
    *   the Console release version, as provided by the Console operator.
@@ -312,6 +312,19 @@ export class ConsoleRemotePlugin implements webpack.WebpackPluginInstance {
       validateConsoleProvidedSharedModules(this.pkg).report();
     }
 
+    const overlapDependencyNames = _.intersection(
+      Object.keys(this.adaptedOptions.pluginMetadata.dependencies ?? {}),
+      Object.keys(this.adaptedOptions.pluginMetadata.optionalDependencies ?? {}),
+    );
+
+    if (overlapDependencyNames.length > 0) {
+      throw new Error(
+        `Detected overlap between dependencies and optionalDependencies: ${overlapDependencyNames.join(
+          ', ',
+        )}`,
+      );
+    }
+
     const resolvedModulePaths = this.adaptedOptions.sharedDynamicModuleSettings.modulePaths ?? [
       path.resolve(process.cwd(), 'node_modules'),
     ];
@@ -348,6 +361,7 @@ export class ConsoleRemotePlugin implements webpack.WebpackPluginInstance {
       name,
       version,
       dependencies,
+      optionalDependencies,
       customProperties,
       exposedModules,
       displayName,
@@ -363,7 +377,6 @@ export class ConsoleRemotePlugin implements webpack.WebpackPluginInstance {
     }
 
     compiler.options.output.publicPath = publicPath;
-
     compiler.options.resolve = compiler.options.resolve ?? {};
     compiler.options.resolve.alias = compiler.options.resolve.alias ?? {};
 
@@ -408,6 +421,7 @@ export class ConsoleRemotePlugin implements webpack.WebpackPluginInstance {
         process.env.NODE_ENV === 'production'
           ? 'plugin-entry.[fullhash].min.js'
           : 'plugin-entry.js',
+      transformPluginManifest: (manifest) => ({ ...manifest, optionalDependencies }),
     }).apply(compiler);
 
     validateConsoleBuildMetadata(pluginMetadata).report();
@@ -418,6 +432,7 @@ export class ConsoleRemotePlugin implements webpack.WebpackPluginInstance {
           compilation,
           extensions,
           exposedModules ?? {},
+          path.dirname(path.resolve(this.baseDir, extensionsFile)),
         );
 
         if (result.hasErrors()) {

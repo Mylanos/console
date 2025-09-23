@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ChartLabel } from '@patternfly/react-charts/victory';
+import { List, ListItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom-v5-compat';
 import {
@@ -9,6 +10,7 @@ import {
 } from '@console/internal/components/utils';
 import { K8sResourceKind, referenceFor, JobKind } from '@console/internal/module/k8s';
 import { PodStatus, usePodsWatcher } from '@console/shared';
+import './JobsOverview.scss';
 
 const kind: string = 'Job';
 const MAX_JOBS: number = 3;
@@ -21,10 +23,10 @@ const JobOverviewItem: React.FC<JobOverviewItemProps> = ({ job }) => {
   const { podData, loaded, loadError } = usePodsWatcher(job, 'Job', namespace);
 
   return loaded && !loadError ? (
-    <li className="list-group-item container-fluid">
+    <ListItem>
       <div className="job-overview__item">
         <ResourceLink kind={kind} name={name} namespace={namespace} />
-        <Link to={podsLink} className="overview__pod-donut-sm">
+        <Link to={podsLink} className="job-overview__pod-donut-sm">
           <PodStatus
             standalone
             data={podData.pods}
@@ -37,7 +39,7 @@ const JobOverviewItem: React.FC<JobOverviewItemProps> = ({ job }) => {
           />
         </Link>
       </div>
-    </li>
+    </ListItem>
   ) : null;
 };
 
@@ -48,11 +50,11 @@ type JobOverviewItemProps = {
 };
 
 const JobsOverviewList: React.FC<JobsOverviewListProps> = ({ jobs }) => (
-  <ul className="list-group">
+  <List isPlain isBordered>
     {jobs?.map((job) => (
       <JobOverviewItem key={job.metadata.uid} job={job} />
     ))}
-  </ul>
+  </List>
 );
 
 JobsOverviewList.displayName = 'JobsOverviewList';
@@ -80,7 +82,7 @@ export const JobsOverview: React.FC<JobsOverviewProps> = ({
         )}
       </SidebarSectionHeading>
       {!(jobs?.length > 0) ? (
-        <span className="text-muted">{emptyMessage}</span>
+        <span className="pf-v6-u-text-color-subtle">{emptyMessage}</span>
       ) : (
         <JobsOverviewList jobs={jobs.slice(0, MAX_JOBS)} />
       )}

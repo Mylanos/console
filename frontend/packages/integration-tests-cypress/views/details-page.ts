@@ -1,5 +1,5 @@
 export const detailsPage = {
-  titleShouldContain: (title: string) => cy.byLegacyTestID('resource-title').contains(title),
+  titleShouldContain: (title: string) => cy.get('[data-test="page-heading"] h1').contains(title),
   sectionHeaderShouldExist: (sectionHeading: string) =>
     cy.get(`[data-test-section-heading="${sectionHeading}"]`).should('exist'),
   labelShouldExist: (labelName: string) => cy.byTestID('label-list').contains(labelName),
@@ -22,5 +22,5 @@ export namespace DetailsPageSelector {
   export const namespace = 'dd[data-test-selector="details-item-value__Namespace"] a';
   export const sectionHeadings = '[data-test-section-heading]';
   export const itemLabels = 'dt';
-  export const horizontalNavTabs = '.co-m-horizontal-nav__menu-item';
+  export const horizontalNavTabs = '.pf-v6-c-tabs__item';
 }

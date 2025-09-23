@@ -1,6 +1,6 @@
 import * as _ from 'lodash-es';
 import * as React from 'react';
-import { ActionGroup, Button } from '@patternfly/react-core';
+import { ActionGroup, Button, Radio } from '@patternfly/react-core';
 import { useTranslation, Trans } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom-v5-compat';
 import {
@@ -13,7 +13,6 @@ import {
 } from '../../module/k8s';
 import { ButtonBar, LoadingBox, resourceObjPath } from '../utils';
 import { Checkbox } from '../checkbox';
-import { RadioInput } from '../radio';
 import { CreatePVCForm } from './create-pvc';
 import { PersistentVolumeClaimModel } from '../../models';
 import { ContainerSelector } from '../container-selector';
@@ -269,15 +268,17 @@ export const AttachStorageForm: React.FC<AttachStorageFormProps> = (props) => {
 
   return (
     <form className="co-m-pane__body-group co-m-pane__form" onSubmit={save}>
-      <label className="control-label co-required">{t('public~PersistentVolumeClaim')}</label>
+      <label className="co-required">{t('public~PersistentVolumeClaim')}</label>
       <div className="form-group">
-        <RadioInput
-          title={t('public~Use existing claim')}
-          value="existing"
-          key="existing"
-          onChange={handleShowCreatePVCChange}
-          checked={showCreatePVC === 'existing'}
+        <Radio
+          id="existing"
           name="showCreatePVC"
+          label={t('public~Use existing claim')}
+          value="existing"
+          onChange={handleShowCreatePVCChange}
+          isChecked={showCreatePVC === 'existing'}
+          data-checked-state={showCreatePVC === 'existing'}
+          data-test="existing-claim-radio-input"
         />
       </div>
 
@@ -293,13 +294,15 @@ export const AttachStorageForm: React.FC<AttachStorageFormProps> = (props) => {
         </div>
       )}
       <div className="form-group">
-        <RadioInput
-          title={t('public~Create new claim')}
-          value="new"
-          key="new"
-          onChange={handleShowCreatePVCChange}
-          checked={showCreatePVC === 'new'}
+        <Radio
+          id="new"
           name="showCreatePVC"
+          label={t('public~Create new claim')}
+          value="new"
+          onChange={handleShowCreatePVCChange}
+          isChecked={showCreatePVC === 'new'}
+          data-checked-state={showCreatePVC === 'new'}
+          data-test="Create new claim-radio-input"
         />
       </div>
 
@@ -311,7 +314,7 @@ export const AttachStorageForm: React.FC<AttachStorageFormProps> = (props) => {
 
       {claimVolumeMode === 'Block' ? (
         <div className="form-group">
-          <label className="control-label co-required" htmlFor="device-path">
+          <label className="co-required" htmlFor="device-path">
             {t('public~Device path')}
           </label>
           <div>
@@ -333,7 +336,7 @@ export const AttachStorageForm: React.FC<AttachStorageFormProps> = (props) => {
         </div>
       ) : (
         <div className="form-group">
-          <label className="control-label co-required" htmlFor="mount-path">
+          <label className="co-required" htmlFor="mount-path">
             {t('public~Mount path')}
           </label>
           <div>
@@ -360,9 +363,7 @@ export const AttachStorageForm: React.FC<AttachStorageFormProps> = (props) => {
             name="mountAsReadOnly"
           />
           <div className="form-group">
-            <label className="control-label" htmlFor="subpath">
-              {t('public~Subpath')}
-            </label>
+            <label htmlFor="subpath">{t('public~Subpath')}</label>
             <div>
               <span className="pf-v6-c-form-control">
                 <input
@@ -397,7 +398,7 @@ export const AttachStorageForm: React.FC<AttachStorageFormProps> = (props) => {
       )}
       {useContainerSelector && (
         <div className="form-group co-break-word">
-          <label className="control-label">{t('public~Containers')}</label>
+          <label>{t('public~Containers')}</label>
           <Button type="button" onClick={handleSelectContainers} variant="link">
             {t('public~(use all containers)')}
           </Button>

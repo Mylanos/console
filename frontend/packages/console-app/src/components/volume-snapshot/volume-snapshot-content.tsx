@@ -1,6 +1,6 @@
 import * as React from 'react';
+import { css } from '@patternfly/react-styles';
 import { sortable } from '@patternfly/react-table';
-import * as classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import {
   ListPageBody,
@@ -17,7 +17,6 @@ import { useActiveColumns } from '@console/internal/components/factory/Table/act
 import {
   ResourceLink,
   ResourceKebab,
-  Timestamp,
   Kebab,
   humanizeBinaryBytes,
   PageComponentProps,
@@ -30,21 +29,24 @@ import {
 } from '@console/internal/models';
 import { referenceForModel, VolumeSnapshotContentKind } from '@console/internal/module/k8s';
 import { Status } from '@console/shared';
+import { Timestamp } from '@console/shared/src/components/datetime/Timestamp';
 import { snapshotStatusFilters, volumeSnapshotStatus } from '../../status';
 
 export const tableColumnInfo = [
   { id: 'name' },
-  { className: classNames('pf-m-hidden', 'pf-m-visible-on-lg'), id: 'status' },
-  { className: classNames('pf-m-hidden', 'pf-m-visible-on-lg'), id: 'size' },
-  { className: classNames('pf-m-hidden', 'pf-m-visible-on-2xl'), id: 'volumeSnapshot' },
-  { className: classNames('pf-m-hidden', 'pf-m-visible-on-2xl'), id: 'snapshotClass' },
-  { className: classNames('pf-m-hidden', 'pf-m-visible-on-2xl'), id: 'createdAt' },
+  { className: css('pf-m-hidden', 'pf-m-visible-on-lg'), id: 'status' },
+  { className: css('pf-m-hidden', 'pf-m-visible-on-lg'), id: 'size' },
+  { className: css('pf-m-hidden', 'pf-m-visible-on-2xl'), id: 'volumeSnapshot' },
+  { className: css('pf-m-hidden', 'pf-m-visible-on-2xl'), id: 'snapshotClass' },
+  { className: css('pf-m-hidden', 'pf-m-visible-on-2xl'), id: 'createdAt' },
   { className: Kebab.columnClass, id: '' },
 ];
 
 const Row: React.FC<RowProps<VolumeSnapshotContentKind>> = ({ obj }) => {
-  const { name, creationTimestamp } = obj?.metadata || {};
-  const { name: snapshotName, namespace: snapshotNamespace } = obj?.spec?.volumeSnapshotRef || {};
+  const name = obj?.metadata?.name || '';
+  const creationTimestamp = obj?.metadata?.creationTimestamp || '';
+  const snapshotName = obj?.spec?.volumeSnapshotRef?.name || '';
+  const snapshotNamespace = obj?.spec?.volumeSnapshotRef?.namespace || '';
   const size = obj.status?.restoreSize;
   const sizeMetrics = size ? humanizeBinaryBytes(size).string : '-';
 
@@ -166,7 +168,7 @@ const VolumeSnapshotContentPage: React.FC<VolumeSnapshotContentPageProps> = ({
   const resourceKind = referenceForModel(VolumeSnapshotContentModel);
   return (
     <>
-      <ListPageHeader title={showTitle ? t(VolumeSnapshotContentModel.labelPluralKey) : undefined}>
+      <ListPageHeader title={showTitle ? t(VolumeSnapshotContentModel.labelPluralKey || '') : ''}>
         {canCreate && (
           <ListPageCreate groupVersionKind={resourceKind}>
             {t('console-app~Create VolumeSnapshotContent')}
@@ -199,7 +201,7 @@ type VolumeSnapshotContentTableProps = {
   data: VolumeSnapshotContentKind[];
   unfilteredData: VolumeSnapshotContentKind[];
   loaded: boolean;
-  loadError: any;
+  loadError: unknown;
 };
 
 export default VolumeSnapshotContentPage;

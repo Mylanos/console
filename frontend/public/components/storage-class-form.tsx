@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom-v5-compat';
-import * as classNames from 'classnames';
+import { useNavigate } from 'react-router-dom-v5-compat';
+import { css } from '@patternfly/react-styles';
 import * as fuzzy from 'fuzzysearch';
 import * as _ from 'lodash-es';
-import { ActionGroup, Button } from '@patternfly/react-core';
+import { ActionGroup, Button, Checkbox } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { getName } from '@console/shared';
 import {
@@ -17,18 +17,19 @@ import {
   K8sResourceCommon,
 } from '@console/dynamic-plugin-sdk';
 import { ResolvedCodeRefProperties } from '@console/dynamic-plugin-sdk/src/types';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
+import { LinkTo } from '@console/shared/src/components/links/LinkTo';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
+import { ConsoleSelect } from '@console/internal/components/utils/console-select';
 import {
   AsyncComponent,
   ButtonBar,
-  Dropdown,
-  ExternalLink,
   Firehose,
   FirehoseResult,
   NameValueEditorPair,
-  PageHeading,
   resourceObjPath,
 } from './utils';
-
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import { k8sCreate, K8sResourceKind, referenceForModel, referenceFor } from './../module/k8s';
 import * as k8sActions from '../actions/k8s';
 import { CSIDriverModel, StorageClassModel } from './../models';
@@ -458,16 +459,13 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
 
       const children = parameter.values ? (
         <>
-          <label
-            className={classNames('control-label', { 'co-required': paramIsRequired(key) })}
-            htmlFor={paramId}
-          >
+          <label className={css({ 'co-required': paramIsRequired(key) })} htmlFor={paramId}>
             {_.get(parameter, 'name', key)}
           </label>
-          <Dropdown
+          <ConsoleSelect
             title={parameter.hintText}
             items={parameter.values}
-            dropDownClassName="dropdown--full-width"
+            isFullWidth
             selectedKey={_.get(newStorageClass, selectedKey)}
             onChange={(event) => setParameterHandler(key, event, false)}
             id={paramId}
@@ -478,25 +476,18 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
       ) : (
         <>
           {isCheckbox ? (
-            <>
-              <div className="checkbox">
-                <label>
-                  <input
-                    type="checkbox"
-                    className="create-storage-class-form__checkbox"
-                    onChange={(event) => setParameterHandler(key, event, isCheckbox)}
-                    checked={_.get(newStorageClass, selectedKey, false)}
-                    id={`provisioner-settings-${key}-checkbox`}
-                    data-test={paramId}
-                  />
-                  {_.get(parameter, 'name', key)}
-                </label>
-              </div>
-            </>
+            <Checkbox
+              label={_.get(parameter, 'name', key)}
+              onChange={(event) => setParameterHandler(key, event, isCheckbox)}
+              isChecked={_.get(newStorageClass, selectedKey, false)}
+              name={`provisioner-settings-${key}-checkbox`}
+              id={`provisioner-settings-${key}-checkbox`}
+              data-test={paramId}
+            />
           ) : (
             <>
               <label
-                className={classNames('control-label', {
+                className={css({
                   'co-required': paramIsRequired(key),
                 })}
                 htmlFor={paramId}
@@ -521,7 +512,7 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
       return (
         <div
           key={key}
-          className={classNames('form-group', {
+          className={css('form-group', {
             'has-error': _.get(newStorageClass.parameters, `${key}.validationMsg`, null),
           })}
         >
@@ -577,16 +568,17 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
     <div className="co-m-pane__form">
       <PageHeading
         title={t('public~StorageClass')}
-        link={
-          <Link to="/k8s/cluster/storageclasses/~new" id="yaml-link" data-test="yaml-link" replace>
-            {t('public~Edit YAML')}
-          </Link>
-        }
+        linkProps={{
+          component: LinkTo(`/k8s/cluster/storageclasses/~new`, { replace: true }),
+          id: 'yaml-link',
+          'data-test': 'yaml-link',
+          label: t('public~Edit YAML'),
+        }}
       />
-      <div className="co-m-pane__body co-m-pane__body--no-top-margin">
+      <PaneBody>
         <form data-test-id="storage-class-form">
-          <div className={classNames('form-group', { 'has-error': fieldErrors.nameValidationMsg })}>
-            <label className="control-label co-required" htmlFor="storage-class-name">
+          <div className={css('form-group', { 'has-error': fieldErrors.nameValidationMsg })}>
+            <label className="co-required" htmlFor="storage-class-name">
               {t('public~Name')}
             </label>
             <span className="pf-v6-c-form-control">
@@ -621,10 +613,10 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
             <label className="co-required" htmlFor="storage-class-reclaim-policy">
               {t('public~Reclaim policy')}
             </label>
-            <Dropdown
+            <ConsoleSelect
               title={t('public~Select reclaim policy')}
               items={reclaimPolicies}
-              dropDownClassName="dropdown--full-width"
+              isFullWidth
               selectedKey={reclaimPolicyKey}
               onChange={(event) => setStorageHandler('reclaim', event)}
               id="storage-class-reclaim-policy"
@@ -640,10 +632,10 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
             <label className="co-required" htmlFor="storage-class-volume-binding-mode">
               {t('public~Volume binding mode')}
             </label>
-            <Dropdown
+            <ConsoleSelect
               title={t('public~Select volume binding mode')}
               items={volumeBindingModes}
-              dropDownClassName="dropdown--full-width"
+              isFullWidth
               selectedKey={volumeBindingModeKey}
               onChange={(event) => setStorageHandler('volumeBindingMode', event)}
               id="storage-class-volume-binding-mode"
@@ -660,12 +652,12 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
             <label className="co-required" htmlFor="storage-class-provisioner">
               {t('public~Provisioner')}
             </label>
-            <Dropdown
+            <ConsoleSelect
               title={t('public~Select Provisioner')}
               autocompleteFilter={autocompleteFilter}
               autocompletePlaceholder={t('public~Select Provisioner')}
               items={_.mapValues(storageTypes.current, 'provisioner')}
-              dropDownClassName="dropdown--full-width"
+              isFullWidth
               menuClassName="dropdown-menu--text-wrap"
               selectedKey={newStorageClass.type}
               onChange={(event) => setStorageHandler('type', event)}
@@ -684,17 +676,13 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
           </div>
 
           {expansionFlag && (
-            <div className="checkbox">
-              <label>
-                <input
-                  type="checkbox"
-                  className="create-storage-class-form__checkbox"
-                  onChange={(event) => setStorageHandler('expansion', event.target.checked)}
-                  checked={allowExpansion}
-                />
-                {t('public~Allow PersistentVolumeClaims to be expanded')}
-              </label>
-            </div>
+            <Checkbox
+              label={t('public~Allow PersistentVolumeClaims to be expanded')}
+              onChange={(_event, checked) => setStorageHandler('expansion', checked)}
+              isChecked={allowExpansion}
+              name="expansion"
+              id="expansion"
+            />
           )}
 
           <ButtonBar errorMessage={error ? error.message : ''} inProgress={loading}>
@@ -719,7 +707,7 @@ const StorageClassFormInner: React.FC<StorageClassFormProps> = (props) => {
             </ActionGroup>
           </ButtonBar>
         </form>
-      </div>
+      </PaneBody>
     </div>
   );
 };
@@ -789,7 +777,7 @@ export type Resources = {
 export const ConnectedStorageClassForm = connect(
   mapStateToProps,
   mapDispatchToProps,
-)((props) => {
+)((props: StateProps & DispatchProps) => {
   const extensions = useResolvedExtensions<StorageClassProvisioner>(isStorageClassProvisioner);
   return <StorageClassFormInner extensions={extensions} {...props} />;
 });

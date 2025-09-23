@@ -1,35 +1,3 @@
-.co-alert-manager {
-  margin-bottom: var(--pf-t--global--spacer--md);
-}
-
-.co-alert-manager-config__edit-alert-routing-btn {
-  margin-bottom: 10px;
-}
-
-.co-alert-manager-config__save-as-default-label {
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-.co-resource-item.co-resource-item--monitoring-alert {
-  margin: 0 5px;
-}
-
-.co-routing-label-editor__error-message {
-  margin-top: -15px;
-}
-
-.pf-v6-c-modal-box {
-  .custom-time-range-modal {
-    overflow: visible;
-    padding: var(--pf-v6-c-modal-box__body--PaddingTop) var(--pf-v6-c-modal-box__body--PaddingLeft);
-  }
-
-  .custom-time-range-modal-footer {
-    padding-top: var(--pf-v6-c-modal-box__body--PaddingTop);
-  }
-}
-
 .graph-empty-state {
   min-height: 310px;
   &__loaded {
@@ -83,10 +51,6 @@
     );
     right: 0;
   }
-}
-
-.monitoring-breadcrumbs {
-  padding-bottom: var(--pf-t--global--spacer--sm);
 }
 
 .monitoring-dashboards__card {
@@ -332,10 +296,6 @@ $monitoring-line-height: 18px;
   &__paragraph {
     margin-bottom: var(--pf-v6-c-content--MarginBottom);
   }
-}
-
-.monitoring-state-icon--pending {
-  color: var(--pf-t--color--gray--60);
 }
 
 .monitoring-timestamp {
@@ -586,7 +546,8 @@ $monitoring-line-height: 18px;
 }
 
 .query-browser__wrapper {
-  border: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+  border: var(--pf-t--global--border--width--regular) solid
+    var(--pf-t--global--border--color--default);
   margin: 0 0 20px 0;
   overflow: visible;
   padding: 10px;

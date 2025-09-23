@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import i18next from 'i18next';
 import { CatalogItem, ExtensionHook } from '@console/dynamic-plugin-sdk';
 import { ResourceIcon, useAccessReview } from '@console/internal/components/utils';
@@ -6,8 +6,9 @@ import { referenceForModel } from '@console/internal/module/k8s';
 import { TaskModel } from '../../../models/pipelines';
 import { TaskProviders } from '../../pipelines/const';
 import { ARTIFACTHUB } from '../../quicksearch/const';
-import { ArtifactHubTask, useGetArtifactHubTasks } from '../apis/artifactHub';
+import { useGetArtifactHubTasks } from '../apis/artifactHub';
 import { TektonHubTask } from '../apis/tektonHub';
+import { ArtifactHubTask } from '../apis/utils';
 import { useTektonHubIntegration } from '../catalog-utils';
 
 const normalizeArtifactHubTasks = (artifactHubTasks: ArtifactHubTask[]): CatalogItem<any>[] => {
@@ -65,7 +66,7 @@ const useArtifactHubTasksProvider: ExtensionHook<CatalogItem[]> = ({
   const [artifactHubTasks, tasksLoaded, tasksError] = useGetArtifactHubTasks(
     canCreateTask && canUpdateTask && artifactHubIntegration,
   );
-  const normalizedArtifactHubTasks = React.useMemo<CatalogItem<TektonHubTask>[]>(
+  const normalizedArtifactHubTasks = useMemo<CatalogItem<TektonHubTask>[]>(
     () => normalizeArtifactHubTasks(artifactHubTasks),
     [artifactHubTasks],
   );

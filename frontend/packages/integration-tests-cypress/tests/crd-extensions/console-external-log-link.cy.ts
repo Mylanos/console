@@ -2,6 +2,7 @@ import { safeLoad, safeDump } from 'js-yaml';
 import * as _ from 'lodash';
 import { checkErrors, testName } from '../../support';
 import { detailsPage } from '../../views/details-page';
+import { guidedTour } from '../../views/guided-tour';
 import { listPage } from '../../views/list-page';
 import { modal } from '../../views/modal';
 import * as yamlEditor from '../../views/yaml-editor';
@@ -17,6 +18,7 @@ describe(`${crd} CRD`, () => {
 
   before(() => {
     cy.login();
+    guidedTour.close();
     cy.createProjectWithCLI(testName);
   });
 
@@ -80,7 +82,7 @@ describe(`${crd} CRD`, () => {
     });
 
     cy.visit(`/k8s/ns/${testName}/pods/${podName}/logs`);
-    cy.get('[data-test="log-links"').should('exist');
+    cy.get('[data-test="resource-log-toolbar"').should('exist');
     cy.get(cell).should('not.exist');
 
     cy.visit(`/k8s/ns/${testName}/pods?name=${podName}`);

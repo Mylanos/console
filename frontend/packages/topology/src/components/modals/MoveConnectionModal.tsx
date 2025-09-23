@@ -12,11 +12,13 @@ import { Edge, Node } from '@patternfly/react-topology';
 import { Formik, FormikProps, FormikValues } from 'formik';
 import { TFunction } from 'i18next';
 import { Trans, useTranslation } from 'react-i18next';
+import { OverlayComponent } from '@console/dynamic-plugin-sdk/src/app/modal-support/OverlayProvider';
+import { useOverlay } from '@console/dynamic-plugin-sdk/src/app/modal-support/useOverlay';
 import {
-  createModalLauncher,
   ModalTitle,
   ModalBody,
   ModalSubmitFooter,
+  ModalWrapper,
 } from '@console/internal/components/factory/modal';
 import { PromiseComponent, ResourceIcon } from '@console/internal/components/utils';
 import { K8sResourceKind } from '@console/internal/module/k8s';
@@ -28,7 +30,7 @@ import {
   createEventSourceKafkaConnection,
   createSinkConnection,
 } from '@console/knative-plugin/src/topology/knative-topology-utils';
-import { TYPE_CONNECTS_TO, TYPE_SERVICE_BINDING } from '../../const';
+import { TYPE_CONNECTS_TO } from '../../const';
 import { createConnection } from '../../utils';
 
 type MoveConnectionModalProps = {
@@ -95,7 +97,7 @@ const MoveConnectionForm: React.FC<
           <FormGroup fieldId="target-node" label="Target">
             <Select
               id="target-node-dropdown"
-              className="dropdown--full-width"
+              // @ts-expect-error FIXME: PatternFly's onSelect is typed wrong (value should be any)
               onSelect={(_, value: Node) => {
                 if (value) {
                   values.target = value;
@@ -143,8 +145,6 @@ class MoveConnectionModal extends PromiseComponent<
     switch (edge.getType()) {
       case TYPE_CONNECTS_TO:
         return createConnection(edge.getSource(), newTarget, edge.getTarget());
-      case TYPE_SERVICE_BINDING:
-        return createConnection(edge.getSource(), newTarget, edge.getTarget());
       case TYPE_EVENT_SOURCE_LINK:
         return createSinkConnection(edge.getSource(), newTarget);
       case TYPE_KAFKA_CONNECTION_LINK:
@@ -190,6 +190,18 @@ class MoveConnectionModal extends PromiseComponent<
   }
 }
 
-export const moveConnectionModal = createModalLauncher((props: MoveConnectionModalProps) => (
-  <MoveConnectionModal {...props} />
-));
+const MoveConnectionModalProvider: OverlayComponent<MoveConnectionModalProps> = (props) => {
+  return (
+    <ModalWrapper blocking onClose={props.closeOverlay}>
+      <MoveConnectionModal cancel={props.closeOverlay} close={props.closeOverlay} {...props} />
+    </ModalWrapper>
+  );
+};
+
+export const useMoveConnectionModalLauncher = (props: MoveConnectionModalProps) => {
+  const launcher = useOverlay();
+  return React.useCallback(
+    () => launcher<MoveConnectionModalProps>(MoveConnectionModalProvider, props),
+    [launcher, props],
+  );
+};

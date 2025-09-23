@@ -1,8 +1,8 @@
-import * as React from 'react';
+import { useState, useEffect } from 'react';
 import {
   PREFERRED_CREATE_EDIT_METHOD_USER_SETTING_VALUE_LATEST,
   usePreferredCreateEditMethod,
-} from '@console/app/src/components/user-preferences/synced-editor';
+} from '@console/app/src/components/user-preferences/synced-editor/usePreferredCreateEditMethod';
 import { useUserSettings } from '../../hooks/useUserSettings';
 import { EditorType } from './editor-toggle';
 
@@ -36,12 +36,12 @@ export const useEditorType = (
     return defaultValue;
   };
 
-  const [activeEditorType, setActiveEditorType] = React.useState<EditorType>(null);
+  const [activeEditorType, setActiveEditorType] = useState<EditorType>(null);
   const setEditorType = (type: EditorType) => {
     setActiveEditorType(type);
     setLastViewedEditorType(type);
   };
-  React.useEffect(() => {
+  useEffect(() => {
     if (resourceLoaded) {
       const editorType: EditorType = getEditorType();
       if (!lastViewedEditorType || lastViewedEditorType !== editorType) {

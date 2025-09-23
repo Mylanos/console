@@ -6,6 +6,7 @@ import {
   pageTitle,
 } from '@console/dev-console/integration-tests/support/constants';
 import { app, navigateTo } from '@console/dev-console/integration-tests/support/pages';
+import { checkDeveloperPerspective } from '@console/dev-console/integration-tests/support/pages/functions/checkDeveloperPerspective';
 import { pipelineActions } from '../../constants';
 import { pipelinesPO } from '../../page-objects';
 import {
@@ -82,8 +83,16 @@ When('user adds another task {string} in parallel', (taskName: string) => {
   pipelineBuilderPage.selectParallelTask(taskName);
 });
 
-Given('user is at pipelines page', () => {
+Given('user is at pipelines page in developer view', () => {
+  checkDeveloperPerspective();
   navigateTo(devNavigationMenu.Pipelines);
+  cy.get(pipelinesPO.pipelinesTab).click();
+});
+
+Given('user is at pipelines page in admin view', () => {
+  cy.get('[data-test="nav"][data-quickstart-id="qs-nav-pipelines"]')
+    .should('exist')
+    .click({ force: true });
   cy.get(pipelinesPO.pipelinesTab).click();
 });
 

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import Helmet from 'react-helmet';
 import { Trans, useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom-v5-compat';
 import { ProjectDashboard } from '@console/internal/components/dashboard/project-dashboard/project-dashboard';
@@ -9,6 +8,7 @@ import { withStartGuide } from '@console/internal/components/start-guide';
 import { history, useAccessReview, Page } from '@console/internal/components/utils';
 import { ProjectModel, RoleBindingModel } from '@console/internal/models';
 import { ALL_NAMESPACES_KEY } from '@console/shared';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import NamespacedPage, { NamespacedPageVariants } from '../../NamespacedPage';
 import ProjectAccessPage from '../../project-access/ProjectAccessPage';
 import CreateProjectListPage, { CreateAProjectButton } from '../CreateProjectListPage';
@@ -70,7 +70,10 @@ export const PageContents: React.FC<MonitoringPageProps> = ({ noProjectsAvailabl
   return !noProjectsAvailable && activeNamespace ? (
     <DetailsPage
       {...props}
-      breadcrumbsFor={() => []}
+      breadcrumbsFor={() => [
+        { name: t('devconsole~Projects'), path: '/project-details/all-namespaces' },
+        { name: t('devconsole~Project Details'), path: `/project-details/ns/${activeNamespace}` },
+      ]}
       name={activeNamespace}
       kind={ProjectModel.kind}
       kindObj={ProjectModel}
@@ -96,9 +99,7 @@ export const ProjectDetailsPage: React.FC<MonitoringPageProps> = (props) => {
   const { t } = useTranslation();
   return (
     <>
-      <Helmet>
-        <title>{t('devconsole~Project Details')}</title>
-      </Helmet>
+      <DocumentTitle>{t('devconsole~Project Details')}</DocumentTitle>
       <NamespacedPage
         hideApplications
         variant={NamespacedPageVariants.light}

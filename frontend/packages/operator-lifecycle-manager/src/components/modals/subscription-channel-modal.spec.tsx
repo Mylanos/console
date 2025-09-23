@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { Radio } from '@patternfly/react-core';
 import { ShallowWrapper, shallow } from 'enzyme';
 import * as _ from 'lodash';
 import {
@@ -6,7 +6,6 @@ import {
   ModalSubmitFooter,
   ModalBody,
 } from '@console/internal/components/factory/modal';
-import { RadioInput } from '@console/internal/components/radio';
 import { testSubscription, testPackageManifest } from '../../../mocks';
 import { SubscriptionModel } from '../../models';
 import { SubscriptionKind, PackageManifestKind } from '../../types';
@@ -78,7 +77,7 @@ describe('SubscriptionChannelModal', () => {
   });
 
   it('renders a radio button for each available channel in the package', () => {
-    expect(wrapper.find(ModalBody).find(RadioInput).length).toEqual(pkg.status.channels.length);
+    expect(wrapper.find(ModalBody).find(Radio).length).toEqual(pkg.status.channels.length);
   });
 
   it('calls `props.k8sUpdate` to update the subscription when form is submitted', (done) => {
@@ -89,10 +88,10 @@ describe('SubscriptionChannelModal', () => {
       return Promise.resolve();
     });
     wrapper
-      .find(RadioInput)
+      .find(Radio)
       .at(1)
       .props()
-      .onChange({ target: { value: 'nightly' } });
+      .onChange({ target: { value: 'nightly' } } as any, true);
     wrapper.find('form').simulate('submit', new Event('submit'));
   });
 

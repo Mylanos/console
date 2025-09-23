@@ -75,7 +75,7 @@ Given('user clicks on {string} to verify that build is completed', (nodeName) =>
   topologyPage.clickOnNode(nodeName);
   topologySidePane.selectTab('Resources');
   checkBuildComplete();
-  cy.byLegacyTestID('sidebar-close-button').click();
+  cy.byTestID('sidebar-close-button').click();
 });
 
 Given('user selects option {string} from context options', (option) => {
@@ -107,7 +107,7 @@ Then(
   (nodeName: string) => {
     topologyPage.knativeNode(nodeName).click({ force: true });
     cy.get('.sidebar__section-heading').contains('Routes');
-    cy.get('[class="co-external-link co-external-link--block"]').should('be.visible');
+    cy.get('[data-test-id="knative-plugin-route-url"]').should('be.visible');
   },
 );
 
@@ -117,7 +117,7 @@ Given(
     topologyPage.clickOnNode(nodeName);
     topologySidePane.selectTab('Resources');
     checkBuildComplete();
-    cy.byLegacyTestID('sidebar-close-button').click();
+    cy.byTestID('sidebar-close-button').click();
     topologyPage.clickOnNode(nodeName);
     cy.byLegacyTestID('actions-menu-button').click();
     topologyActions.selectAction('Make Serverless');
@@ -200,7 +200,7 @@ When('user clicks on {string} to check pod is running', (nodeName: string) => {
   topologyPage.clickOnNode(nodeName);
   topologySidePane.selectTab('Resources');
   checkPodRunning();
-  cy.byLegacyTestID('sidebar-close-button').click();
+  cy.byTestID('sidebar-close-button').click();
   cy.reload();
 });
 
@@ -213,18 +213,14 @@ When(
 );
 
 Then('user is able to see value of {string} as {string}', (util: string, utilValue: string) => {
-  cy.get('.ocs-yaml-editor__wrapper').contains(`${util}: '${utilValue}'`).should('be.visible');
+  cy.get('.ocs-yaml-editor').contains(`${util}: '${utilValue}'`).should('be.visible');
 });
 
 Then(
   'user is able to see the value of {string} and {string} as {string} and {string} percent respectively',
   (maxScale: string, minScale: string, minScaleValue: string, maxScaleValue: string) => {
-    cy.get('.ocs-yaml-editor__wrapper')
-      .contains(`${maxScale}: '${maxScaleValue}'`)
-      .should('be.visible');
+    cy.get('.ocs-yaml-editor').contains(`${maxScale}: '${maxScaleValue}'`).should('be.visible');
 
-    cy.get('.ocs-yaml-editor__wrapper')
-      .contains(`${minScale}: '${minScaleValue}'`)
-      .should('be.visible');
+    cy.get('.ocs-yaml-editor').contains(`${minScale}: '${minScaleValue}'`).should('be.visible');
   },
 );

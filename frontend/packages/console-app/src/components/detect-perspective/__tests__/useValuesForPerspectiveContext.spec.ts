@@ -5,7 +5,7 @@ import {
 } from '@console/dynamic-plugin-sdk/src/perspective/__tests__/perspective.data';
 import { usePerspectiveExtension, usePerspectives } from '@console/shared/src';
 import { ACM_PERSPECTIVE_ID } from '../../../consts';
-import { usePreferredPerspective } from '../../user-preferences';
+import { usePreferredPerspective } from '../../user-preferences/perspective/usePreferredPerspective';
 import { useLastPerspective } from '../useLastPerspective';
 import { useValuesForPerspectiveContext } from '../useValuesForPerspectiveContext';
 
@@ -24,7 +24,7 @@ jest.mock('../../user-preferences/perspective/usePreferredPerspective', () => ({
 }));
 
 jest.mock('react', () => {
-  const reactModule = require.requireActual('react');
+  const reactModule = jest.requireActual('react');
   return {
     ...reactModule,
     useState: jest.fn(),
@@ -52,7 +52,7 @@ describe('useValuesForPerspectiveContext', () => {
     usePerspectiveExtensionMock.mockReturnValue(acmPerspectiveExtension);
     useStateMock.mockReturnValue(['', jest.fn()]);
     const [perspective, ,] = useValuesForPerspectiveContext();
-    expect(perspective).toBeUndefined();
+    expect(perspective).toBe('');
   });
 
   it('should return undefined for PerspectiveType and false for loaded if preferred or last viewed perspective has not yet loaded', () => {
@@ -62,7 +62,7 @@ describe('useValuesForPerspectiveContext', () => {
     usePerspectiveExtensionMock.mockReturnValue(acmPerspectiveExtension);
     useStateMock.mockReturnValue(['', jest.fn()]);
     let [perspective, , loaded] = useValuesForPerspectiveContext();
-    expect(perspective).toBeUndefined();
+    expect(perspective).toBe('');
     expect(loaded).toBeFalsy();
 
     jest.resetAllMocks();
@@ -73,7 +73,7 @@ describe('useValuesForPerspectiveContext', () => {
     usePerspectiveExtensionMock.mockReturnValue(acmPerspectiveExtension);
     useStateMock.mockReturnValue(['', jest.fn()]);
     [perspective, , loaded] = useValuesForPerspectiveContext();
-    expect(perspective).toBeUndefined();
+    expect(perspective).toBe('');
     expect(loaded).toBeFalsy();
   });
 

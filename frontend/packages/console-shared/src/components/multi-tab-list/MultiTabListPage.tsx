@@ -1,15 +1,11 @@
 import * as React from 'react';
-import { ActionList, ActionListItem, Button } from '@patternfly/react-core';
+import { ActionListItem, Button } from '@patternfly/react-core';
+import { SimpleDropdown } from '@patternfly/react-templates';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom-v5-compat';
-import {
-  history,
-  PageHeading,
-  HorizontalNav,
-  Page,
-  Dropdown,
-} from '@console/internal/components/utils';
+import { history, HorizontalNav, Page } from '@console/internal/components/utils';
 import { referenceForModel } from '@console/internal/module/k8s';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
 import { PageTitleContext } from '../pagetitle/PageTitleContext';
 import { MenuActions, MenuAction, SecondaryButtonAction } from './multi-tab-list-page-types';
 
@@ -70,34 +66,46 @@ const MultiTabListPage: React.FC<MultiTabListPageProps> = ({
 
   return (
     <PageTitleContext.Provider value={titleProviderValues}>
-      <PageHeading className="co-m-nav-title--row" title={title} badge={badge}>
-        <ActionList>
-          <ActionListItem>
+      <PageHeading
+        title={title}
+        badge={badge}
+        primaryAction={
+          <>
             {secondaryButtonAction && (
-              <Button
-                type="button"
-                variant="secondary"
-                data-test="secondary-action"
-                component={(props) => <Link {...props} to={secondaryButtonAction.href} />}
-              >
-                {secondaryButtonAction.label}
-              </Button>
+              <ActionListItem>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  data-test="secondary-action"
+                  component={(props) => <Link {...props} to={secondaryButtonAction.href} />}
+                >
+                  {secondaryButtonAction.label}
+                </Button>
+              </ActionListItem>
             )}
-          </ActionListItem>
-          <ActionListItem>
             {items && (
-              <Dropdown
-                buttonClassName="pf-m-primary"
-                menuClassName="pf-m-align-right-on-md"
-                title={t('console-shared~Create')}
-                noSelection
-                items={items}
-                onChange={onSelectCreateAction}
-              />
+              <ActionListItem>
+                <SimpleDropdown
+                  toggleProps={{
+                    variant: 'primary',
+                    // @ts-expect-error non-prop attribute is used for cypress
+                    'data-test': 'tab-list-page-create',
+                  }}
+                  toggleContent={t('console-shared~Create')}
+                  initialItems={Object.keys(items).map((item) => ({
+                    value: item,
+                    content: items[item],
+                    'data-test-dropdown-menu': item,
+                  }))}
+                  onSelect={(_e, value: string) => {
+                    onSelectCreateAction(value);
+                  }}
+                />
+              </ActionListItem>
             )}
-          </ActionListItem>
-        </ActionList>
-      </PageHeading>
+          </>
+        }
+      />
       <HorizontalNav pages={pages} noStatusBox />
     </PageTitleContext.Provider>
   );

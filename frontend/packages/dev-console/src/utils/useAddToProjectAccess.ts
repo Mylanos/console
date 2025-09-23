@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import { useAccessReview } from '@console/internal/components/utils';
 import {
   BuildConfigModel,
@@ -10,10 +10,7 @@ import {
   ServiceModel,
 } from '@console/internal/models';
 import { AccessReviewResourceAttributes, K8sKind } from '@console/internal/module/k8s';
-import { ALLOW_SERVICE_BINDING_FLAG } from '@console/service-binding-plugin/src/const';
-import { useFlag } from '@console/shared';
 import { allCatalogImageResourceAccess, allImportResourceAccess } from '../actions/add-resources';
-import { SERVICE_BINDING_ENABLED } from '../const';
 
 const resourceAttributes = (model: K8sKind, namespace: string): AccessReviewResourceAttributes => {
   return {
@@ -37,9 +34,7 @@ export const useAddToProjectAccess = (activeNamespace: string): string[] => {
   const routeAccess = useAccessReview(resourceAttributes(RouteModel, activeNamespace));
   const serviceAccess = useAccessReview(resourceAttributes(ServiceModel, activeNamespace));
 
-  const serviceBindingEnabled = useFlag(ALLOW_SERVICE_BINDING_FLAG);
-
-  return React.useMemo(() => {
+  return useMemo(() => {
     const createResourceAccess: string[] = [];
     if (
       buildConfigsAccess &&
@@ -54,9 +49,6 @@ export const useAddToProjectAccess = (activeNamespace: string): string[] => {
         createResourceAccess.push(allCatalogImageResourceAccess);
       }
     }
-    if (serviceBindingEnabled) {
-      createResourceAccess.push(SERVICE_BINDING_ENABLED);
-    }
     return createResourceAccess;
   }, [
     buildConfigsAccess,
@@ -66,6 +58,5 @@ export const useAddToProjectAccess = (activeNamespace: string): string[] => {
     routeAccess,
     secretAccess,
     serviceAccess,
-    serviceBindingEnabled,
   ]);
 };

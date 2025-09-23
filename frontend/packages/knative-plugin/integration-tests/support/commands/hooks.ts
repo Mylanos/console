@@ -24,7 +24,8 @@ before(() => {
 });
 
 beforeEach(() => {
-  cy.initDeveloper();
+  cy.initAdmin();
+  cy.byLegacyTestID('topology-header').should('exist').click({ force: true });
 });
 
 after(() => {

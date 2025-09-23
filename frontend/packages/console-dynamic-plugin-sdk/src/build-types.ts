@@ -1,4 +1,15 @@
 import { PluginBuildMetadata, PluginManifest } from '@openshift/dynamic-plugin-sdk-webpack';
+import { PackageJson } from 'read-pkg';
+
+/**
+ * Note: this metadata should be supported in upstream plugin SDK.
+ */
+export type ExtraPluginBuildMetadata = Partial<{
+  /** Plugin dependencies listed here will be treated as optional. */
+  optionalDependencies: Record<string, string>;
+}>;
+
+export type ExtraPluginManifestProperties = ExtraPluginBuildMetadata;
 
 /**
  * Additional plugin metadata supported by the Console application.
@@ -17,7 +28,14 @@ export type ConsoleSupportedCustomProperties = Partial<{
 /**
  * Build-time Console dynamic plugin metadata.
  */
-export type ConsolePluginBuildMetadata = PluginBuildMetadata & ConsoleSupportedCustomProperties;
+export type ConsolePluginBuildMetadata = PluginBuildMetadata &
+  ExtraPluginBuildMetadata &
+  ConsoleSupportedCustomProperties;
+
+/** The package.json for a Console plugin. */
+export type ConsolePluginPackageJSON = PackageJson & {
+  consolePlugin?: ConsolePluginBuildMetadata;
+};
 
 /**
  * Standard Console dynamic plugin manifest format.
@@ -27,7 +45,8 @@ export type StandardConsolePluginManifest = {
     console?: ConsoleSupportedCustomProperties;
     [customNamespace: string]: unknown;
   };
-} & PluginManifest;
+} & ExtraPluginManifestProperties &
+  PluginManifest;
 
 /**
  * Legacy Console dynamic plugin manifest format.

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,8 +8,8 @@ import {
   ExtensionHook,
 } from '@console/dynamic-plugin-sdk';
 import { coFetchJSON } from '@console/internal/co-fetch';
-import { ExternalLink } from '@console/internal/components/utils';
 import { APIError } from '@console/shared';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import { DevfileSample } from '../../import/devfile/devfile-types';
 
 const normalizeDevfile = (devfileSamples: DevfileSample[], t: TFunction): CatalogItem[] => {
@@ -31,11 +31,7 @@ const normalizeDevfile = (devfileSamples: DevfileSample[], t: TFunction): Catalo
       detailsProperties.push({
         label: t('devconsole~Sample repository'),
         value: (
-          <ExternalLink
-            text={gitRepositoryUrl}
-            href={gitRepositoryUrl}
-            additionalClassName="co-break-all"
-          />
+          <ExternalLink text={gitRepositoryUrl} href={gitRepositoryUrl} className="co-break-all" />
         ),
       });
     }
@@ -71,11 +67,11 @@ const normalizeDevfile = (devfileSamples: DevfileSample[], t: TFunction): Catalo
 };
 
 const useDevfile: ExtensionHook<CatalogItem[]> = (): [CatalogItem[], boolean, any] => {
-  const [devfileSamples, setDevfileSamples] = React.useState<DevfileSample[]>();
-  const [loadedError, setLoadedError] = React.useState<APIError>();
+  const [devfileSamples, setDevfileSamples] = useState<DevfileSample[]>();
+  const [loadedError, setLoadedError] = useState<APIError>();
   const { t } = useTranslation();
 
-  React.useEffect(() => {
+  useEffect(() => {
     let mounted = true;
     coFetchJSON('/api/devfile/samples/?registry=https://registry.devfile.io')
       .then((resp) => {
@@ -84,10 +80,12 @@ const useDevfile: ExtensionHook<CatalogItem[]> = (): [CatalogItem[], boolean, an
       .catch((err) => {
         if (mounted) setLoadedError(err);
       });
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const normalizedDevfileSamples = React.useMemo(() => normalizeDevfile(devfileSamples || [], t), [
+  const normalizedDevfileSamples = useMemo(() => normalizeDevfile(devfileSamples || [], t), [
     devfileSamples,
     t,
   ]);

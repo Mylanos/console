@@ -1,4 +1,4 @@
-import { testHook } from '../../../../../__tests__/utils/hooks-utils';
+import { testHook } from '@console/shared/src/test-utils/hooks-utils';
 import { useSearchFilter } from '../useSearchFilter';
 
 jest.mock('../filter-utils', () => ({
@@ -9,7 +9,7 @@ let mockCurrentSearchQuery = '';
 let mockLabelsQuery = '';
 
 jest.mock('@console/shared', () => {
-  const ActualShared = require.requireActual('@console/shared');
+  const ActualShared = jest.requireActual('@console/shared');
   return {
     ...ActualShared,
     useQueryParams: () =>

@@ -10,19 +10,14 @@ export type RoutesUrlLinkProps = {
 const RoutesUrlLink: React.FC<RoutesUrlLinkProps> = ({ urls = [], title }) =>
   urls.length > 0 && (
     <>
-      {title && <span className="text-muted">{title}: </span>}
+      {title && <span className="pf-v6-u-text-color-subtle">{title}: </span>}
       {urls.map((url) =>
         url?.endsWith('svc.cluster.local') ? (
           <ClipboardCopy isReadOnly hoverTip="Copy" clickTip="Copied">
             {url}
           </ClipboardCopy>
         ) : (
-          <ExternalLinkWithCopy
-            key={url}
-            link={url}
-            text={url}
-            additionalClassName="co-external-link--block"
-          />
+          <ExternalLinkWithCopy key={url} href={url} text={url} displayBlock />
         ),
       )}
     </>

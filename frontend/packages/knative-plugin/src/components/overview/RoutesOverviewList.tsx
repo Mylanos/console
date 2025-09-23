@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { List } from '@patternfly/react-core';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { SidebarSectionHeading } from '@console/internal/components/utils';
@@ -20,9 +21,11 @@ const RoutesOverviewList: React.FC<RoutesOverviewListProps> = ({ ksroutes, resou
     <>
       <SidebarSectionHeading text={t('knative-plugin~Routes')} />
       {_.isEmpty(ksroutes) ? (
-        <span className="text-muted">{t('knative-plugin~No Routes found for this resource.')}</span>
+        <span className="pf-v6-u-text-color-subtle">
+          {t('knative-plugin~No Routes found for this resource.')}
+        </span>
       ) : (
-        <ul className="list-group">
+        <List isPlain isBordered>
           {_.map(ksroutes, (route) => {
             const routeLinks: routeLinkProps[] = getKnativeRoutesLinks(route, resource);
             if (resource.kind === ServiceModel.kind) {
@@ -44,7 +47,7 @@ const RoutesOverviewList: React.FC<RoutesOverviewListProps> = ({ ksroutes, resou
             }
             return null;
           })}
-        </ul>
+        </List>
       )}
     </>
   );

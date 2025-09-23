@@ -1,5 +1,5 @@
 import { Given, When, Then, And } from 'cypress-cucumber-preprocessor/steps';
-import { nav } from '@console/cypress-integration-tests/views/nav';
+import { guidedTour } from '@console/cypress-integration-tests/views/guided-tour';
 import {
   switchPerspective,
   devWorkspaceStatuses,
@@ -19,10 +19,9 @@ import { operatorsPage } from '@console/dev-console/integration-tests/support/pa
 import { searchResource } from '@console/dev-console/integration-tests/support/pages/search-resources/search-page';
 import { webTerminalPage } from '../pages/web-terminal/webTerminal-page';
 
-Given('user has logged in as admin user', () => {
+Given('user has logged in', () => {
   cy.login();
-  perspective.switchTo(switchPerspective.Administrator);
-  nav.sidenav.switcher.shouldHaveText(switchPerspective.Administrator);
+  guidedTour.close();
 });
 
 Given('user has closed existing terminal workspace', () => {
@@ -74,7 +73,7 @@ When('user closed web terminal window', () => {
 
 Then('user is able see {int} web terminal tabs', (n: number) => {
   cy.get(webTerminalPO.tabsList).then(($el) => {
-    expect($el.prop('children').length).toEqual(n + 1);
+    expect($el.prop('children').length).toEqual(n);
   });
 });
 
@@ -96,7 +95,7 @@ And(
     const linkToYamlEditorPrefURI = `${baseUrl}/k8s/ns/${terminalNamespace}/workspace.devfile.io~v1alpha1~DevWorkspace/`;
 
     // get the devworkspace name from resource title
-    cy.get(`[data-test-id=resource-title]`)
+    cy.get('[data-test="page-heading"] h1 [data-test-id="resource-title"]')
       .should('be.visible')
       .then(($item) => {
         devWsName = $item.text();
@@ -125,4 +124,10 @@ Then('user will see the terminal instance for namespace {string}', (nameSpace: s
   searchResource.selectSearchedItem('terminal');
   // Disabling following line due to terminal loading issue from backend at the first load
   // devWorkspacePage.verifyDevWsResourceStatus(devWorkspaceStatuses.running);
+});
+
+Given('user has created or selected namespace {string}', (projectName: string) => {
+  Cypress.env('NAMESPACE', projectName);
+  projectNameSpace.selectOrCreateProject(`${projectName}`);
+  // cy.get(devNavigationMenuPO.project).click();
 });

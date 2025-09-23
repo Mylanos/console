@@ -1,7 +1,5 @@
 import * as _ from 'lodash-es';
 import * as React from 'react';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useDispatch } from 'react-redux';
 import {
   TableGridBreakpoint,
@@ -15,7 +13,7 @@ import {
   ISortBy,
   OnSort,
 } from '@patternfly/react-table';
-import * as classNames from 'classnames';
+import { css } from '@patternfly/react-styles';
 import { CellMeasurerCache, CellMeasurer } from 'react-virtualized';
 import {
   AutoSizer,
@@ -40,7 +38,6 @@ import {
 import { RowFilter } from '../filter-toolbar';
 import * as UIActions from '../../actions/ui';
 import { alertingRuleStateOrder, alertSeverityOrder } from '../monitoring/utils';
-import { ingressValidHosts } from '../ingress';
 import { convertToBaseValue, EmptyBox, StatusBox, WithScrollContainer } from '../utils';
 import {
   CustomResourceDefinitionKind,
@@ -65,7 +62,6 @@ const sorts = {
   daemonsetNumScheduled: (daemonset) =>
     _.toInteger(_.get(daemonset, 'status.currentNumberScheduled')),
   dataSize: (resource) => _.size(_.get(resource, 'data')) + _.size(_.get(resource, 'binaryData')),
-  ingressValidHosts,
   instanceType: (obj): string => getMachineSetInstanceType(obj),
   jobCompletionsSucceeded: (job) => job?.status?.succeeded || 0,
   jobType: (job) => getJobTypeAndCompletions(job).type,
@@ -113,7 +109,7 @@ export const TableRow: React.FC<TableRowProps> = ({
       data-test-rows="resource-row"
       data-key={trKey}
       style={style}
-      className={classNames('pf-v6-c-table__tr', className)}
+      className={css('pf-v6-c-table__tr', className)}
       role="row"
     />
   );
@@ -179,11 +175,12 @@ export const TableData: React.FC<TableDataProps> = ({
   className,
   columnID,
   columns,
+  dataTest,
   showNamespaceOverride,
   children,
 }) => {
   return isColumnVisible(window.innerWidth, columnID, columns, showNamespaceOverride) ? (
-    <Td data-label={columnID} className={className} role="gridcell">
+    <Td data-label={columnID} className={className} role="gridcell" data-test={dataTest}>
       {children}
     </Td>
   ) : null;
@@ -193,6 +190,7 @@ export type TableDataProps = {
   className?: string;
   columnID?: string;
   columns?: Set<string>;
+  dataTest?: string;
   id?: string;
   showNamespaceOverride?: boolean;
 };
@@ -598,7 +596,7 @@ export const Table: React.FC<TableProps> = ({
   }, []);
 
   return (
-    <div data-test={dataTest} className="co-m-table-grid co-m-table-grid--bordered">
+    <div data-test={dataTest}>
       {mock ? (
         <EmptyBox label={label} />
       ) : (

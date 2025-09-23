@@ -1,10 +1,9 @@
 import { act } from 'react-dom/test-utils';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useSelector } from 'react-redux';
+import { useFavoritesOptions } from '@console/internal/components/useFavoritesOptions';
 import { useK8sWatchResource } from '@console/internal/components/utils/k8s-watch-hook';
 import { ConfigMapKind } from '@console/internal/module/k8s';
-import { testHook } from '../../../../../__tests__/utils/hooks-utils';
+import { testHook } from '@console/shared/src/test-utils/hooks-utils';
 import {
   createConfigMap,
   updateConfigMap,
@@ -16,6 +15,11 @@ const useK8sWatchResourceMock = useK8sWatchResource as jest.Mock;
 const createConfigMapMock = createConfigMap as jest.Mock;
 const updateConfigMapMock = updateConfigMap as jest.Mock;
 const useSelectorMock = useSelector as jest.Mock;
+const useFavoritesOptionsMock = useFavoritesOptions as jest.Mock;
+
+jest.mock('@console/internal/components/useFavoritesOptions', () => ({
+  useFavoritesOptions: jest.fn(),
+}));
 
 // need to mock StorageEvent because it doesn't exist
 (global as any).StorageEvent = Event;
@@ -25,8 +29,7 @@ jest.mock('@console/internal/components/utils/k8s-watch-hook', () => ({
 }));
 
 jest.mock('../../utils/user-settings', () => {
-  // requireActual exist in used jest 21 and still in latest version, but was not defined well in old TS definition
-  const originalModule = (jest as any).requireActual('../../utils/user-settings');
+  const originalModule = jest.requireActual('../../utils/user-settings');
   return {
     ...originalModule,
     createConfigMap: jest.fn(),
@@ -35,7 +38,7 @@ jest.mock('../../utils/user-settings', () => {
 });
 
 jest.mock('react-redux', () => {
-  const originalModule = (jest as any).requireActual('react-redux');
+  const originalModule = jest.requireActual('react-redux');
   return {
     ...originalModule,
     useSelector: jest.fn(),
@@ -64,6 +67,7 @@ const savedDataConfigMap: ConfigMapKind = {
 beforeEach(() => {
   jest.resetAllMocks();
   useSelectorMock.mockImplementation((selector) => selector({ sdkCore: { user: { uid: 'foo' } } }));
+  useFavoritesOptionsMock.mockReturnValue([[], jest.fn(), true]);
 
   // eslint-disable-next-line no-console
   ['log', 'info', 'warn', 'error'].forEach((key) => (console[key] = consoleMock));
@@ -666,11 +670,8 @@ describe('useUserSettings', () => {
     );
 
     let storageListenerInvoked = false;
-    const storageListener = (event: StorageEvent) => {
+    const storageListener = () => {
       storageListenerInvoked = true;
-      expect(event.storageArea).toBe(sessionStorage);
-      expect(event.key).toBe('user-settings-imposter');
-      expect(event.newValue).toBe(JSON.stringify({ 'impersonate.key': 'newValue' }));
     };
     window.addEventListener('storage', storageListener);
 

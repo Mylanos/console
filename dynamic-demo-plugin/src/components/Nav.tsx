@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { HorizontalNav } from '@openshift-console/dynamic-plugin-sdk';
 import { useTranslation } from 'react-i18next';
-import { PageSection } from '@patternfly/react-core';
+import { PageSection, Title } from '@patternfly/react-core';
 
 type Hero = {
   customData: {
@@ -10,18 +10,18 @@ type Hero = {
 }
 
 const Thor: React.FC<Hero> = ( {customData} ) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation("plugin__console-demo-plugin");
 
   return <PageSection>
-    <h1>{t('plugin__console-demo-plugin~Hello {{planet}}! I am Thor!',  { planet: customData.planet })}</h1>
+    <Title headingLevel='h1'>{t('Hello {{planet}}! I am Thor!',  { planet: customData.planet })}</Title>
   </PageSection>
 };
 
 const Loki: React.FC<Hero> = ( {customData} ) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation("plugin__console-demo-plugin");
 
   return <PageSection>
-    <h1>{t('plugin__console-demo-plugin~Hello {{planet}}! I am Loki!', { planet: customData.planet })}</h1>
+    <Title headingLevel='h1'>{t('Hello {{planet}}! I am Loki!', { planet: customData.planet })}</Title>
     </PageSection>
 };
 

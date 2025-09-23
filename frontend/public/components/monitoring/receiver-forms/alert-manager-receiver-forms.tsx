@@ -1,17 +1,30 @@
 /* eslint-disable camelcase, tsdoc/syntax */
 import * as React from 'react';
 import * as _ from 'lodash-es';
-import { Helmet } from 'react-helmet';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom-v5-compat';
-import { ActionGroup, Alert, Button } from '@patternfly/react-core';
+import {
+  ActionGroup,
+  Alert,
+  Button,
+  Form,
+  FormGroup,
+  FormHelperText,
+  HelperText,
+  HelperTextItem,
+  MenuToggle,
+  MenuToggleElement,
+  Select,
+  SelectOption,
+  TextInput,
+} from '@patternfly/react-core';
+import { ExclamationCircleIcon } from '@patternfly/react-icons';
 import { safeLoad } from 'js-yaml';
-import * as classNames from 'classnames';
 
 import { APIError } from '@console/shared';
-import PrimaryHeading from '@console/shared/src/components/heading/PrimaryHeading';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import { ButtonBar } from '../../utils/button-bar';
-import { Dropdown } from '../../utils/dropdown';
 import { Firehose } from '../../utils/firehose';
 import { StatusBox } from '../../utils/status-box';
 import {
@@ -32,6 +45,7 @@ import * as WebhookForm from './webhook-receiver-form';
 import * as EmailForm from './email-receiver-form';
 import * as SlackForm from './slack-receiver-form';
 import { coFetchJSON } from '../../../co-fetch';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
 
 /**
  * Converts deprecated route match and match_re:
@@ -167,12 +181,7 @@ const AlertMsg: React.FC<AlertMsgProps> = ({ type }) => {
 const ReceiverInfoTip: React.FC<ReceiverInfoTipProps> = ({ type }) => {
   const { t } = useTranslation();
   return (
-    <Alert
-      isInline
-      className="co-alert co-alert--scrollable"
-      variant="info"
-      title={`${type} ${t('public~Receiver')}`}
-    >
+    <Alert isInline variant="info" title={`${type} ${t('public~Receiver')}`}>
       <div className="co-pre-line">
         <AlertMsg type={type} />
       </div>
@@ -187,6 +196,7 @@ const ReceiverBaseForm: React.FC<ReceiverBaseFormProps> = ({
   editReceiverNamed,
   alertmanagerGlobals, // contains default props not in alertmanager.yaml's config.global
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [saveErrorMsg, setSaveErrorMsg] = React.useState<string>();
   const [inProgress, setInProgress] = React.useState<boolean>(false);
@@ -266,6 +276,40 @@ const ReceiverBaseForm: React.FC<ReceiverBaseFormProps> = ({
   );
 
   const [formValues, dispatchFormChange] = React.useReducer(formReducer, INITIAL_STATE);
+  const [isTypeOpen, setIsTypeOpen] = React.useState(false);
+  const [selectedType, setSelectedType] = React.useState<string>(
+    receiverTypes[formValues.receiverType] ?? t('public~Select receiver type...'),
+  );
+
+  const onTypeToggleClick = () => {
+    setIsTypeOpen(!isTypeOpen);
+  };
+
+  const onTypeSelect = (
+    _event: React.MouseEvent<Element, MouseEvent> | undefined,
+    value: string,
+  ) => {
+    setSelectedType(value);
+    setIsTypeOpen(false);
+    dispatchFormChange({
+      type: 'setFormValues',
+      payload: {
+        receiverType: Object.keys(receiverTypes).find((key) => receiverTypes[key] === value),
+      },
+    });
+  };
+
+  const typeToggle = (toggleRef: React.Ref<MenuToggleElement>) => (
+    <MenuToggle
+      ref={toggleRef}
+      onClick={onTypeToggleClick}
+      isExpanded={isTypeOpen}
+      isFullWidth
+      data-test="receiver-type"
+    >
+      {selectedType}
+    </MenuToggle>
+  );
   const SubForm = subformFactory(formValues.receiverType);
 
   const receiverNameAlreadyExist = doesReceiverNameAlreadyExist(formValues.receiverName);
@@ -346,7 +390,7 @@ const ReceiverBaseForm: React.FC<ReceiverBaseFormProps> = ({
       () => {
         setSaveErrorMsg('');
         setInProgress(false);
-        navigate('/monitoring/alertmanagerconfig');
+        navigate('/settings/cluster/alertmanagerconfig');
       },
       (err) => {
         setSaveErrorMsg(err.message);
@@ -354,7 +398,6 @@ const ReceiverBaseForm: React.FC<ReceiverBaseFormProps> = ({
       },
     );
   };
-  const { t } = useTranslation();
   const receiverTypeLabel = formValues.receiverType
     ? t('public~{{receiverTypeLabel}}', {
         receiverTypeLabel: receiverTypes[formValues.receiverType],
@@ -363,112 +406,112 @@ const ReceiverBaseForm: React.FC<ReceiverBaseFormProps> = ({
   const defaultString = isDefaultReceiver ? t('public~Default') : null;
 
   return (
-    <div className="co-m-pane__body co-m-pane__form">
-      <Helmet>
-        <title>{t('public~{{titleVerb}} Receiver', { titleVerb })}</title>
-      </Helmet>
-      <form className="co-m-pane__body-group" onSubmit={save}>
-        <PrimaryHeading>
-          {t('public~{{titleVerb}} {{receiverTypeLabel}} {{defaultString}} Receiver', {
-            titleVerb,
-            receiverTypeLabel,
-            defaultString,
-          })}
-        </PrimaryHeading>
-        {isDefaultReceiver && <ReceiverInfoTip type={InitialReceivers.Default} />}
-        {formValues.receiverName === 'Critical' && !formValues.receiverType && (
-          <ReceiverInfoTip type={InitialReceivers.Critical} />
-        )}
-        {formValues.receiverName === 'Watchdog' && !formValues.receiverType && (
-          <ReceiverInfoTip type={InitialReceivers.Watchdog} />
-        )}
-        <div
-          className={classNames('form-group', {
-            'has-error': receiverNameAlreadyExist,
-          })}
-        >
-          <label className="control-label co-required">{t('public~Receiver name')}</label>
-          <span className="pf-v6-c-form-control">
-            <input
-              type="text"
-              value={formValues.receiverName}
-              onChange={(e) =>
+    <>
+      <DocumentTitle>{t('public~{{titleVerb}} Receiver', { titleVerb })}</DocumentTitle>
+      <PageHeading
+        title={t('public~{{titleVerb}} {{receiverTypeLabel}} {{defaultString}} Receiver', {
+          titleVerb,
+          receiverTypeLabel,
+          defaultString,
+        })}
+      />
+      <PaneBody>
+        <Form onSubmit={save} isWidthLimited>
+          {isDefaultReceiver && <ReceiverInfoTip type={InitialReceivers.Default} />}
+          {formValues.receiverName === 'Critical' && !formValues.receiverType && (
+            <ReceiverInfoTip type={InitialReceivers.Critical} />
+          )}
+          {formValues.receiverName === 'Watchdog' && !formValues.receiverType && (
+            <ReceiverInfoTip type={InitialReceivers.Watchdog} />
+          )}
+          <FormGroup label={t('public~Receiver name')} fieldId="receiver-name" isRequired>
+            <TextInput
+              value={formValues.receiverName ?? ''}
+              onChange={(_e, value: string) =>
                 dispatchFormChange({
                   type: 'setFormValues',
-                  payload: { receiverName: e.target.value },
+                  payload: { receiverName: value },
                 })
               }
+              isRequired
+              validated={receiverNameAlreadyExist ? 'error' : 'default'}
+              aria-invalid={receiverNameAlreadyExist}
+              id="receiver-name"
+              data-test="receiver-name"
               aria-describedby="receiver-name-help"
-              name="receiverName"
-              data-test-id="receiver-name"
-              required
             />
-          </span>
-          {receiverNameAlreadyExist && (
-            <span className="help-block">
-              <span data-test-id="receiver-name-already-exists-error">
-                {t('public~A receiver with that name already exists.')}
-              </span>
-            </span>
+            {receiverNameAlreadyExist && (
+              <FormHelperText>
+                <HelperText>
+                  <HelperTextItem
+                    icon={<ExclamationCircleIcon />}
+                    variant="error"
+                    id="receiver-name-help"
+                    aria-live="polite"
+                  >
+                    {t('public~A receiver with that name already exists.')}
+                  </HelperTextItem>
+                </HelperText>
+              </FormHelperText>
+            )}
+          </FormGroup>
+          <FormGroup label={t('public~Receiver type')} fieldId="receiver-type" isRequired>
+            <Select
+              id="receiver-type"
+              isOpen={isTypeOpen}
+              selected={selectedType}
+              onSelect={onTypeSelect}
+              onOpenChange={(isOpen) => setIsTypeOpen(isOpen)}
+              toggle={typeToggle}
+              shouldFocusToggleOnSelect
+              aria-label={t('public~Select receiver type...')}
+            >
+              {Object.entries(receiverTypes).map(([key, value]) => (
+                <SelectOption key={key} value={value} data-test={`receiver-type-${key}`}>
+                  {value}
+                </SelectOption>
+              ))}
+            </Select>
+          </FormGroup>
+
+          {formValues.receiverType && (
+            <>
+              <SubForm.Form
+                globals={defaultGlobals}
+                formValues={formValues}
+                dispatchFormChange={dispatchFormChange}
+              />
+              <RoutingLabelEditor
+                formValues={formValues}
+                dispatchFormChange={dispatchFormChange}
+                isDefaultReceiver={isDefaultReceiver}
+              />
+            </>
           )}
-        </div>
-        <div className="form-group co-m-pane__dropdown">
-          <label className="control-label co-required">{t('public~Receiver type')}</label>
-          <Dropdown
-            title="Select receiver type..."
-            name="receiverType"
-            items={receiverTypes}
-            dropDownClassName="dropdown--full-width"
-            data-test-id="receiver-type"
-            selectedKey={formValues.receiverType}
-            onChange={(receiverType) =>
-              dispatchFormChange({
-                type: 'setFormValues',
-                payload: {
-                  receiverType,
-                },
-              })
-            }
-          />
-        </div>
 
-        {formValues.receiverType && (
-          <>
-            <SubForm.Form
-              globals={defaultGlobals}
-              formValues={formValues}
-              dispatchFormChange={dispatchFormChange}
-            />
-            <RoutingLabelEditor
-              formValues={formValues}
-              dispatchFormChange={dispatchFormChange}
-              isDefaultReceiver={isDefaultReceiver}
-            />
-          </>
-        )}
-
-        <ButtonBar errorMessage={saveErrorMsg || loadErrorMsg} inProgress={inProgress}>
-          <ActionGroup className="pf-v6-c-form">
-            <Button
-              type="submit"
-              variant="primary"
-              data-test-id="save-changes"
-              isDisabled={isFormInvalid}
-            >
-              {saveButtonText}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              data-test-id="cancel"
-              onClick={() => navigate(-1)}
-            >
-              {t('public~Cancel')}
-            </Button>
-          </ActionGroup>
-        </ButtonBar>
-      </form>
-    </div>
+          <ButtonBar errorMessage={saveErrorMsg || loadErrorMsg} inProgress={inProgress}>
+            <ActionGroup>
+              <Button
+                type="submit"
+                variant="primary"
+                data-test="save-changes"
+                isDisabled={isFormInvalid}
+              >
+                {saveButtonText}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                data-test="cancel"
+                onClick={() => navigate(-1)}
+              >
+                {t('public~Cancel')}
+              </Button>
+            </ActionGroup>
+          </ButtonBar>
+        </Form>
+      </PaneBody>
+    </>
   );
 };
 

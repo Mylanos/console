@@ -1,27 +1,26 @@
 /* eslint-env node */
-import * as webpack from 'webpack';
-import * as path from 'path';
-import * as _ from 'lodash';
-import * as HtmlWebpackPlugin from 'html-webpack-plugin';
-import * as MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import * as ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
+import * as HtmlWebpackPlugin from 'html-webpack-plugin';
+import * as _ from 'lodash';
+import * as MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import * as path from 'path';
+import * as webpack from 'webpack';
 
+import { sharedPluginModules } from '@console/dynamic-plugin-sdk/src/shared-modules/shared-modules-meta';
+import { ExtensionValidatorPlugin } from '@console/dynamic-plugin-sdk/src/webpack/ExtensionValidatorPlugin';
+import { resolvePluginPackages } from '@console/plugin-sdk/src/codegen/plugin-resolver';
 import { HtmlWebpackSkipAssetsPlugin } from 'html-webpack-skip-assets-plugin';
 import { Configuration as WebpackDevServerConfiguration } from 'webpack-dev-server';
-import { sharedPluginModules } from '@console/dynamic-plugin-sdk/src/shared-modules';
-import { getActivePluginsModuleData } from '@console/plugin-sdk/src/codegen/active-plugins';
-import { resolvePluginPackages } from '@console/plugin-sdk/src/codegen/plugin-resolver';
 import { CircularDependencyPreset } from './webpack.circular-deps';
-
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 interface Configuration extends webpack.Configuration {
   devServer?: WebpackDevServerConfiguration;
 }
 
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -33,7 +32,8 @@ const OPENSHIFT_CI = process.env.OPENSHIFT_CI;
 const WDS_PORT = 8080;
 
 /* Helpers */
-const staticPluginPackages = resolvePluginPackages();
+const pluginPackages = resolvePluginPackages();
+
 const extractCSS = new MiniCssExtractPlugin({
   filename: 'app-bundle.[name].[contenthash].css',
   // We follow BEM naming to scope CSS.
@@ -62,9 +62,10 @@ const sharedPluginModulesTest = getVendorModuleRegExp(
 const config: Configuration = {
   entry: {
     main: [
-      './public/components/app.jsx',
-      'monaco-editor/esm/vs/editor/editor.worker.js',
+      './public/components/app.tsx',
       '/node_modules/@patternfly-5/patternfly/patternfly.scss',
+      '/node_modules/@patternfly-5/patternfly/patternfly-addons.scss',
+      '/node_modules/@patternfly-5/patternfly/patternfly-charts.scss',
     ],
   },
   cache: {
@@ -95,9 +96,6 @@ const config: Configuration = {
       prettier: false,
       'prettier/parser-yaml': false,
     },
-    fallback: {
-      net: false, // for YAML language server
-    },
   },
   node: {
     global: true, // see https://github.com/browserify/randombytes/issues/36
@@ -112,9 +110,7 @@ const config: Configuration = {
       {
         test: path.resolve(__dirname, 'get-active-plugins.js'),
         loader: 'val-loader',
-        options: {
-          getModuleData: () => getActivePluginsModuleData(staticPluginPackages),
-        },
+        options: { pluginPackages },
       },
       {
         test: /(\.jsx?)|(\.tsx?)$/,
@@ -146,14 +142,6 @@ const config: Configuration = {
             },
           },
         ],
-      },
-      {
-        test: /node_modules[\\\\|/](yaml-language-server)/,
-        loader: 'umd-compat-loader',
-      },
-      {
-        test: /node_modules[\\\\|/](vscode-json-languageservice)/,
-        loader: 'umd-compat-loader',
       },
       {
         test: /\.s?css$/,
@@ -241,6 +229,7 @@ const config: Configuration = {
     runtimeChunk: 'single',
   },
   plugins: [
+    new ExtensionValidatorPlugin({ pluginPackages }),
     new webpack.NormalModuleReplacementPlugin(/^lodash$/, 'lodash-es'),
     new ForkTsCheckerWebpackPlugin({
       typescript: {
@@ -265,6 +254,16 @@ const config: Configuration = {
     new MonacoWebpackPlugin({
       languages: ['yaml', 'dockerfile', 'json', 'plaintext'],
       globalAPI: true,
+      customLanguages: [
+        {
+          label: 'yaml',
+          entry: 'monaco-yaml',
+          worker: {
+            id: 'monaco-yaml/yamlWorker',
+            entry: 'monaco-yaml/yaml.worker',
+          },
+        },
+      ],
     }),
     new NodePolyfillPlugin({
       additionalAliases: ['process'],
@@ -286,10 +285,6 @@ const config: Configuration = {
         { from: path.resolve(__dirname, './packages/knative-plugin/locales'), to: 'locales' },
         { from: path.resolve(__dirname, './packages/container-security/locales'), to: 'locales' },
         { from: path.resolve(__dirname, './packages/pipelines-plugin/locales'), to: 'locales' },
-        {
-          from: path.resolve(__dirname, './packages/service-binding-plugin/locales'),
-          to: 'locales',
-        },
         { from: path.resolve(__dirname, './packages/shipwright-plugin/locales'), to: 'locales' },
         { from: path.resolve(__dirname, './packages/webterminal-plugin/locales'), to: 'locales' },
         { from: path.resolve(__dirname, './packages/topology/locales'), to: 'locales' },
@@ -298,16 +293,7 @@ const config: Configuration = {
         { from: path.resolve(__dirname, './packages/gitops-plugin/locales'), to: 'locales' },
         { from: path.resolve(__dirname, './packages/metal3-plugin/locales'), to: 'locales' },
         { from: path.resolve(__dirname, './packages/vsphere-plugin/locales'), to: 'locales' },
-        {
-          from: path.resolve(__dirname, './packages/network-attachment-definition-plugin/locales'),
-          to: 'locales',
-        },
-        { from: path.resolve(__dirname, './packages/patternfly/locales'), to: 'locales' },
         { from: path.resolve(__dirname, './packages/insights-plugin/locales'), to: 'locales' },
-        {
-          from: path.resolve(__dirname, './packages/local-storage-operator-plugin/locales'),
-          to: 'locales',
-        },
         {
           from: path.resolve(__dirname, './packages/console-telemetry-plugin/locales'),
           to: 'locales',

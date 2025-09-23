@@ -1,7 +1,7 @@
 /* eslint-disable tsdoc/syntax */
 import * as _ from 'lodash-es';
-import * as React from 'react';
-import * as classnames from 'classnames';
+import { Component } from 'react';
+import { css } from '@patternfly/react-styles';
 import { Link } from 'react-router-dom-v5-compat';
 import { Title } from '@patternfly/react-core';
 
@@ -40,7 +40,7 @@ const fetchQuery = (q, long, namespace) => {
 };
 
 /** @augments {React.Component<{fetch?: () => Promise<any>, query?: string, title: string, href?: string, rel?: string, target?: string}}>} */
-export class Status extends React.Component {
+export class Status extends Component {
   constructor(props) {
     super(props);
     this.interval = null;
@@ -103,7 +103,7 @@ export class Status extends React.Component {
   render() {
     const title = this.props.title;
     const { short, long, status } = this.state;
-    const shortStatusClassName = classnames('graph-status__short', {
+    const shortStatusClassName = css('graph-status__short', {
       'graph-status__short--ok': status === 'OK',
       'graph-status__short--warn': status === 'WARN',
       'graph-status__short--error': status === 'ERROR',

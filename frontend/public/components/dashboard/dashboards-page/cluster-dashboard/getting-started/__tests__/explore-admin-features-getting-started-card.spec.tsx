@@ -1,16 +1,15 @@
-import * as React from 'react';
 import { shallow } from 'enzyme';
 import { GettingStartedCard } from '@console/shared/src/components/getting-started';
 
 import { ExploreAdminFeaturesGettingStartedCard } from '../explore-admin-features-getting-started-card';
 
 jest.mock('react', () => ({
-  ...require.requireActual('react'),
-  useLayoutEffect: require.requireActual('react').useEffect,
+  ...jest.requireActual('react'),
+  useLayoutEffect: jest.requireActual('react').useEffect,
 }));
 
 jest.mock('@console/shared/src', () => ({
-  ...require.requireActual('@console/shared/src'),
+  ...jest.requireActual('@console/shared/src'),
   useOpenShiftVersion: () => '4.16.0',
 }));
 
@@ -44,7 +43,7 @@ describe('ExploreAdminFeaturesGettingStartedCard', () => {
       title: 'OpenShift AI',
       description: 'Build, deploy, and manage AI-enabled applications.',
       href:
-        '/operatorhub/all-namespaces?keyword=openshift+ai&details-item=rhods-operator-redhat-operators-openshift-marketplace',
+        '/catalog?catalogType=operator&keyword=openshift+ai&selectedId=rhods-operator-redhat-operators-openshift-marketplace',
     });
     expect(wrapper.find(GettingStartedCard).props().moreLink).toEqual({
       id: 'whats-new',

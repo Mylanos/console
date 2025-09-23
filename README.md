@@ -15,7 +15,7 @@ The console is a more friendly `kubectl` in the form of a single page webapp. It
 
 ### Dependencies:
 
-1. [node.js](https://nodejs.org/) >= 18 & [yarn](https://yarnpkg.com/en/docs/install) >= 1.20
+1. [node.js](https://nodejs.org/) >= 22 & [yarn classic](https://classic.yarnpkg.com/en/docs/install) >= 1.20
 2. [go](https://golang.org/) >= 1.22+
 3. [oc](https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/) or [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) and an OpenShift or Kubernetes cluster
 4. [jq](https://stedolan.github.io/jq/download/) (for `contrib/environment.sh`)
@@ -77,17 +77,13 @@ oc process -f examples/console-oauth-client.yaml | oc apply -f -
 oc get oauthclient console-oauth-client -o jsonpath='{.secret}' > examples/console-client-secret
 ```
 
-If the CA bundle of the OpenShift API server is unavailable, fetch the CA
-certificates from a service account secret. Due to [upstream changes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#manually-create-an-api-token-for-a-serviceaccount),
-these service account secrets need to be created manually.
-Otherwise copy the CA bundle to
-`examples/ca.crt`:
+Create a long-lived API token Secret for the console ServiceAccount and extract it to the
+`examples` folder. This creates the `token` and `ca.crt` files, which are necessary for `bridge` to
+proxy API server requests:
 
 ```
-oc apply -f examples/sa-secrets.yaml
-oc get secrets -n default --field-selector type=kubernetes.io/service-account-token -o json | \
-    jq '.items[0].data."ca.crt"' -r | python -m base64 -d > examples/ca.crt
-# Note: use "openssl base64" because the "base64" tool is different between mac and linux
+oc apply -f examples/secret.yaml
+oc extract secret/off-cluster-token -n openshift-console --to ./examples --confirm
 ```
 
 Finally run the console and visit [localhost:9000](http://localhost:9000):
@@ -111,16 +107,19 @@ In order to enable the monitoring UI and see the "Observe" navigation item while
   ```
 
 #### Updating `tectonic-console-builder` image
-Updating `tectonic-console-builder` image is needed whenever there is a change in the build-time dependencies and/or go versions.
+The `tectonic-console-builder` image is used to run Cypress tests in CI. Updating it is
+needed when there is a change in the Node.js version. Note that the instance of `go` present
+in the container image is unused, because the backend tests use a different image.
 
-In order to update the `tectonic-console-builder` to a new version i.e. v27, follow these steps:
+In order to update the `tectonic-console-builder` to a new version (e.g., v29), follow these steps:
 
 1. Update the `tectonic-console-builder` image tag in files listed below:
    - .ci-operator.yaml
    - Dockerfile.dev
    - Dockerfile.plugins.demo
-   For example, `tectonic-console-builder:27`
-2. Update the dependencies in Dockerfile.builder file i.e. v18.0.0.
+   For example, `tectonic-console-builder:29`
+2. Update the dependencies in Dockerfile.builder file by setting the `NODE_VERSION`
+   and `YARN_VERSION` environment variables to the desired versions.
 3. Run `./push-builder.sh` script build and push the updated builder image to quay.io.
    Note: You can test the image using `./builder-run.sh ./build-backend.sh`.
    To update the image on quay.io, you need edit permission to the quay.io/coreos/  tectonic-console-builder repo.
@@ -465,6 +464,23 @@ this way, then 'none' will be used. Additionally, violation reporting is throttl
 spamming the telemetry service with repetitive data. Identical violations will not be
 reported more than once a day.
 
+In case of local developement of the dynamic plugin, just pass needed CSP directives address to the console server, using the `--content-security-policy` flag.
+
+Example:
+
+```
+./bin/bridge --content-security-policy script-src='localhost:1234',font-src='localhost:2345 localhost:3456'
+```
+
+List of configurable CSP directives is available in the [openshift/api repository](https://github.com/openshift/api/blob/master/console/v1/types_console_plugin.go#L102-L137).
+
+The list is extended automatically by the console server with following CSP directives:
+- `"frame-src 'none'"`
+- `"frame-ancestors 'none'"`
+- `"object-src 'none'"`
+
+Currently this feature is behind feature gate.
+
 ## Frontend Packages
 - [console-dynamic-plugin-sdk](./frontend/packages/console-dynamic-plugin-sdk/README.md)
 [[API]](./frontend/packages/console-dynamic-plugin-sdk/docs/api.md)
@@ -481,5 +497,32 @@ reported more than once a day.
 - [knative-plugin](./frontend/packages/knative-plugin/README.md)
 
 - operator-lifecycle-manager
+
+## Telemetry
+
+Console uses Segment Analytics for telemetry purposes. To test Console telemetry on local
+development environment, set up `BRIDGE_TELEMETRY` environment variable before running the
+Console Bridge server.
+
+```sh
+# https://github.com/openshift/console-operator/blob/main/manifests/05-telemetry-config.yaml
+API_HOST="console.redhat.com/connections/api/v1"
+JS_HOST="console.redhat.com/connections/cdn"
+PUBLIC_API_KEY="..." # Use API key from the link above
+
+# The BRIDGE_TELEMETRY variable contains a comma separated list of Console telemetry options
+export BRIDGE_TELEMETRY=\
+SEGMENT_API_HOST="${API_HOST}",\
+SEGMENT_JS_HOST="${JS_HOST}",\
+SEGMENT_API_KEY="${PUBLIC_API_KEY}",\
+DISABLED="false"
+
+# Run Bridge server, telemetry options should get passed to frontend as SERVER_FLAGS.telemetry
+./bin/bridge
+
+# If you no longer need the custom telemetry options, unset the BRIDGE_TELEMETRY variable
+unset BRIDGE_TELEMETRY
+```
+
 [[Descriptors README]](./frontend/packages/operator-lifecycle-manager/src/components/descriptors/README.md)
 [[Descriptors API Reference]](./frontend/packages/operator-lifecycle-manager/src/components/descriptors/reference/reference.md)

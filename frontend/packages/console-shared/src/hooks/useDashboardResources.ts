@@ -1,6 +1,4 @@
-import * as React from 'react';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   RequestMap,
@@ -14,6 +12,7 @@ import {
 } from '@console/internal/actions/dashboards';
 import { PrometheusResponse } from '@console/internal/components/graphs';
 import { RESULTS_TYPE } from '@console/internal/reducers/dashboards';
+import { RootState } from 'public/redux';
 import { useNotificationAlerts } from './useNotificationAlerts';
 
 export const useDashboardResources: UseDashboardResources = ({
@@ -26,7 +25,7 @@ export const useDashboardResources: UseDashboardResources = ({
   );
 
   const dispatch = useDispatch();
-  React.useEffect(() => {
+  useEffect(() => {
     prometheusQueries?.forEach((query) =>
       dispatch(watchPrometheusQuery(query.query, null, query.timespan)),
     );
@@ -40,9 +39,11 @@ export const useDashboardResources: UseDashboardResources = ({
     };
   }, [dispatch, prometheusQueries, urls]);
 
-  const urlResults = useSelector((state) => state.dashboards.get(RESULTS_TYPE.URL));
-  const prometheusResults = useSelector(
-    (state) => state.dashboards.get(RESULTS_TYPE.PROMETHEUS) as RequestMap<PrometheusResponse>,
+  const urlResults = useSelector<RootState, RequestMap<any>>((state) =>
+    state.dashboards.get(RESULTS_TYPE.URL),
+  );
+  const prometheusResults = useSelector<RootState, RequestMap<PrometheusResponse>>((state) =>
+    state.dashboards.get(RESULTS_TYPE.PROMETHEUS),
   );
 
   return {

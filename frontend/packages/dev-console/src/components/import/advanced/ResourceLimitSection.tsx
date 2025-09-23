@@ -26,12 +26,12 @@ const ResourceLimitSection: React.FC<ResourceLimitSectionProps> = ({ hideTitle }
       fullWidth
     >
       {container && (
-        <span>
+        <span data-testid="ResourceLimitSection-container-heading">
           {t('devconsole~Container')} &nbsp;
           <ResourceIcon kind={ContainerModel.kind} /> {container}
         </span>
       )}
-      <TertiaryHeading>{t('devconsole~CPU')}</TertiaryHeading>
+      <TertiaryHeading altSpacing="pf-v6-u-my-0">{t('devconsole~CPU')}</TertiaryHeading>
       <ResourceLimitField
         name="limits.cpu.request"
         label={t('devconsole~Request')}
@@ -50,7 +50,7 @@ const ResourceLimitSection: React.FC<ResourceLimitSectionProps> = ({ hideTitle }
         )}
       />
 
-      <TertiaryHeading>{t('devconsole~Memory')}</TertiaryHeading>
+      <TertiaryHeading altSpacing="pf-v6-u-my-0">{t('devconsole~Memory')}</TertiaryHeading>
       <ResourceLimitField
         name="limits.memory.request"
         label={t('devconsole~Request')}

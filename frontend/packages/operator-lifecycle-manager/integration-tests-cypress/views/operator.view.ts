@@ -1,3 +1,4 @@
+import { testName } from '@console/cypress-integration-tests/support';
 import { projectDropdown } from '@console/cypress-integration-tests/views/common';
 import { detailsPage } from '@console/cypress-integration-tests/views/details-page';
 import { submitButton } from '@console/cypress-integration-tests/views/form';
@@ -15,16 +16,17 @@ export const operator = {
     useOperatorRecommendedNamespace: boolean = false,
   ) => {
     cy.log(`install operator "${operatorName}" in ${installToNamespace}`);
-    nav.sidenav.clickNavLink(['Operators', 'OperatorHub']);
-    cy.byTestID('search-operatorhub').type(operatorName);
+    cy.visit(`/catalog/ns/${testName}`);
+    cy.byTestID('tab operator').click();
+    cy.byTestID('search-catalog').type(operatorName);
     cy.log('go to operator overview panel');
     cy.byTestID(operatorHubCardTestID).click();
     cy.log('go to the install form');
+    cy.byTestID('catalog-details-modal-cta').click({ force: true });
     cy.log('verify the channel selection is displayed');
-    cy.get('.co-operator-channel__select').should('exist');
+    cy.byTestID('operator-channel-select-toggle').should('exist');
     cy.log('verify the version selection is displayed');
-    cy.get('.co-operator-version__select').should('exist');
-    cy.byLegacyTestID('operator-install-btn').click({ force: true });
+    cy.byTestID('operator-version-select-toggle').should('exist');
     /*  Installation mode
      *    () All namespaces        // default: 'openshift-operators'
      *    () A specific namespace  // Operator recommended or test namespace
@@ -54,8 +56,8 @@ export const operator = {
     }
     if (installToNamespace !== GlobalInstalledNamespace && !useOperatorRecommendedNamespace) {
       cy.byTestID('dropdown-selectbox').click();
-      cy.byLegacyTestID('dropdown-text-filter').type(installToNamespace);
-      cy.byTestID('dropdown-menu-item-link').click();
+      cy.byTestID('console-select-search-input').type(installToNamespace);
+      cy.byTestDropDownMenu(`${installToNamespace}-Project`).click();
       cy.byTestID('dropdown-selectbox').should('contain', installToNamespace);
     }
     // Install
@@ -73,7 +75,7 @@ export const operator = {
     installToNamespace: string = GlobalInstalledNamespace,
   ) => {
     cy.log(`operator "${operatorName}" should exist in ${installToNamespace}`);
-    nav.sidenav.clickNavLink(['Operators', 'Installed Operators']);
+    nav.sidenav.clickNavLink(['Ecosystem', 'Installed Operators']);
     listPage.titleShouldHaveText('Installed Operators');
     operator.filterByName(operatorName);
     cy.byTestOperatorRow(operatorName, { timeout: 300000 }).should('exist'); // 5 minutes
@@ -85,7 +87,7 @@ export const operator = {
     installedNamespace: string = GlobalInstalledNamespace,
   ) => {
     cy.log(`navigate to details page of operator "${operatorName}"`);
-    nav.sidenav.clickNavLink(['Operators', 'Installed Operators']);
+    nav.sidenav.clickNavLink(['Ecosystem', 'Installed Operators']);
     listPage.titleShouldHaveText('Installed Operators');
     projectDropdown.selectProject(installedNamespace);
     projectDropdown.shouldContain(installedNamespace);
@@ -201,7 +203,7 @@ export const operator = {
   },
   shouldNotExist: (operatorName: string, installToNamespace: string = GlobalInstalledNamespace) => {
     cy.log(`operator "${operatorName}" should not exist in ${installToNamespace}`);
-    nav.sidenav.clickNavLink(['Operators', 'Installed Operators']);
+    nav.sidenav.clickNavLink(['Ecosystem', 'Installed Operators']);
     cy.byTestOperatorRow(operatorName).should('not.exist');
   },
   filterByName: (name: string) => {

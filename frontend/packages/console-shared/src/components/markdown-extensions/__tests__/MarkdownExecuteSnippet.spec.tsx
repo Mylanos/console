@@ -1,19 +1,20 @@
-import * as React from 'react';
 import { shallow } from 'enzyme';
-import useCloudShellAvailable from '@console/webterminal-plugin/src/components/cloud-shell/useCloudShellAvailable';
+import { useCloudShellAvailable } from '@console/webterminal-plugin/src/components/cloud-shell/useCloudShellAvailable';
 import MarkdownExecuteSnippet, { ExecuteSnippet } from '../MarkdownExecuteSnippet';
 import { htmlDocumentForExecuteButton } from './test-data';
 
 jest.mock('@console/webterminal-plugin/src/components/cloud-shell/useCloudShellAvailable', () => ({
-  default: jest.fn(),
+  useCloudShellAvailable: jest.fn(),
 }));
+
+const mockUseCloudShellAvailable = useCloudShellAvailable as jest.Mock;
 
 describe('MarkdownExecuteSnippet', () => {
   beforeAll(() => {
     document.body.innerHTML = htmlDocumentForExecuteButton;
   });
   it('should render null if no element is found', () => {
-    (useCloudShellAvailable as jest.Mock).mockReturnValueOnce(true);
+    mockUseCloudShellAvailable.mockReturnValue(true);
     const wrapper = shallow(
       <MarkdownExecuteSnippet docContext={document} rootSelector="#execute-markdown-3" />,
     );
@@ -22,7 +23,7 @@ describe('MarkdownExecuteSnippet', () => {
   });
 
   it('should render components if element is found and cloudshell available', () => {
-    (useCloudShellAvailable as jest.Mock).mockReturnValueOnce(true);
+    mockUseCloudShellAvailable.mockReturnValue(true);
     const wrapper = shallow(
       <MarkdownExecuteSnippet docContext={document} rootSelector="#execute-markdown-1" />,
     );
@@ -31,7 +32,7 @@ describe('MarkdownExecuteSnippet', () => {
   });
 
   it('should render null if element is found and cloudshell is not available', () => {
-    (useCloudShellAvailable as jest.Mock).mockReturnValueOnce(false);
+    mockUseCloudShellAvailable.mockReturnValue(false);
     const wrapper = shallow(
       <MarkdownExecuteSnippet docContext={document} rootSelector="#execute-markdown-1" />,
     );

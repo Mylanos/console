@@ -1,31 +1,31 @@
-import * as React from 'react';
-import { Helmet } from 'react-helmet';
+import { useState } from 'react';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom-v5-compat';
 import { ActionGroup, Button, Title } from '@patternfly/react-core';
 
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import { SecretModel, ConfigMapModel } from '../../models';
 import { IdentityProvider, k8sCreate, OAuthKind } from '../../module/k8s';
-import { ButtonBar, ListInput, PageHeading } from '../utils';
+import { ButtonBar, ListInput } from '../utils';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
 import { addIDP, getOAuthResource as getOAuth, redirectToOAuthPage, mockNames } from './';
 import { IDPNameInput } from './idp-name-input';
 import { IDPCAFileInput } from './idp-cafile-input';
 
 export const AddOpenIDIDPPage = () => {
   const navigate = useNavigate();
-  const [inProgress, setInProgress] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState('');
-  const [name, setName] = React.useState('openid');
-  const [clientID, setClientID] = React.useState('');
-  const [clientSecret, setClientSecret] = React.useState('');
-  const [claimPreferredUsernames, setClaimPreferredUsernames] = React.useState([
-    'preferred_username',
-  ]);
-  const [claimNames, setClaimNames] = React.useState(['name']);
-  const [claimEmails, setClaimEmails] = React.useState(['email']);
-  const [issuer, setIssuer] = React.useState('');
-  const [caFileContent, setCaFileContent] = React.useState('');
-  const [extraScopes, setExtraScopes] = React.useState([]);
+  const [inProgress, setInProgress] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [name, setName] = useState('openid');
+  const [clientID, setClientID] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+  const [claimPreferredUsernames, setClaimPreferredUsernames] = useState(['preferred_username']);
+  const [claimNames, setClaimNames] = useState(['name']);
+  const [claimEmails, setClaimEmails] = useState(['email']);
+  const [issuer, setIssuer] = useState('');
+  const [caFileContent, setCaFileContent] = useState('');
+  const [extraScopes, setExtraScopes] = useState([]);
 
   const { t } = useTranslation();
 
@@ -155,25 +155,24 @@ export const AddOpenIDIDPPage = () => {
 
   return (
     <div className="co-m-pane__form">
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
+      <DocumentTitle>{title}</DocumentTitle>
       <PageHeading
         title={title}
         helpText={t(
           'public~Integrate with an OpenID Connect identity provider using an Authorization Code Flow.',
         )}
       />
-      <div className="co-m-pane__body">
-        <form onSubmit={submit} name="form" className="co-m-pane__body-group">
+      <PaneBody>
+        <form onSubmit={submit} name="form">
           <IDPNameInput value={name} onChange={(e) => setName(e.currentTarget.value)} />
           <div className="form-group">
-            <label className="control-label co-required" htmlFor="client-id">
+            <label className="co-required" htmlFor="client-id">
               {t('public~Client ID')}
             </label>
             <span className="pf-v6-c-form-control">
               <input
                 type="text"
+                aria-label={t('public~Client ID')}
                 onChange={(e) => setClientID(e.currentTarget.value)}
                 value={clientID}
                 id="client-id"
@@ -182,12 +181,13 @@ export const AddOpenIDIDPPage = () => {
             </span>
           </div>
           <div className="form-group">
-            <label className="control-label co-required" htmlFor="client-secret">
+            <label className="co-required" htmlFor="client-secret">
               {t('public~Client secret')}
             </label>
             <span className="pf-v6-c-form-control">
               <input
                 type="password"
+                aria-label={t('public~Client secret')}
                 onChange={(e) => setClientSecret(e.currentTarget.value)}
                 value={clientSecret}
                 id="client-secret"
@@ -196,12 +196,13 @@ export const AddOpenIDIDPPage = () => {
             </span>
           </div>
           <div className="form-group">
-            <label className="control-label co-required" htmlFor="issuer">
+            <label className="co-required" htmlFor="issuer">
               {t('public~Issuer URL')}
             </label>
             <span className="pf-v6-c-form-control">
               <input
                 type="url"
+                aria-label={t('public~Issuer URL')}
                 onChange={(e) => setIssuer(e.currentTarget.value)}
                 value={issuer}
                 id="issuer"
@@ -216,46 +217,58 @@ export const AddOpenIDIDPPage = () => {
             </div>
           </div>
           <div className="co-form-section__separator" />
-          <Title headingLevel="h3" className="pf-v6-u-mb-sm">
-            {t('public~Claims')}
-          </Title>
-          <p className="co-help-text">
-            {t(
-              'public~Claims map metadata from the OpenID provider to an OpenShift user. The first non-empty claim is used.',
-            )}
-          </p>
-          <ListInput
-            label={t('public~Preferred username')}
-            initialValues={claimPreferredUsernames}
-            onChange={(c: string[]) => setClaimPreferredUsernames(c)}
-            helpText={t('public~Any scopes to request in addition to the standard openid scope.')}
-          />
-          <ListInput
-            label={t('public~Name')}
-            initialValues={claimNames}
-            onChange={(c: string[]) => setClaimNames(c)}
-            helpText={t(
-              'public~The list of claims whose values should be used as the display name.',
-            )}
-          />
-          <ListInput
-            label={t('public~Email')}
-            initialValues={claimEmails}
-            onChange={(c: string[]) => setClaimEmails(c)}
-            helpText={t(
-              'public~The list of claims whose values should be used as the email address.',
-            )}
-          />
+          <div>
+            <Title headingLevel="h3" className="pf-v6-u-mb-sm">
+              {t('public~Claims')}
+            </Title>
+            <p>
+              {t(
+                'public~Claims map metadata from the OpenID provider to an OpenShift user. The first non-empty claim is used.',
+              )}
+            </p>
+            <ListInput
+              label={t('public~Preferred username')}
+              id="openid-claims-preferred-username"
+              initialValues={claimPreferredUsernames}
+              onChange={(c: string[]) => setClaimPreferredUsernames(c)}
+              helpText={t('public~Any scopes to request in addition to the standard openid scope.')}
+            />
+            <ListInput
+              label={t('public~Name')}
+              id="openid-claims-name"
+              initialValues={claimNames}
+              onChange={(c: string[]) => setClaimNames(c)}
+              helpText={t(
+                'public~The list of claims whose values should be used as the display name.',
+              )}
+            />
+            <ListInput
+              label={t('public~Email')}
+              id="openid-claims-email"
+              initialValues={claimEmails}
+              onChange={(c: string[]) => setClaimEmails(c)}
+              helpText={t(
+                'public~The list of claims whose values should be used as the email address.',
+              )}
+            />
+          </div>
           <div className="co-form-section__separator" />
-          <Title headingLevel="h3" className="pf-v6-u-mb-sm">
-            {t('public~More options')}
-          </Title>
-          <IDPCAFileInput value={caFileContent} onChange={(c: string) => setCaFileContent(c)} />
-          <ListInput
-            label={t('public~Extra scopes')}
-            onChange={(c: string[]) => setExtraScopes(c)}
-            helpText={t('public~Any scopes to request in addition to the standard openid scope.')}
-          />
+          <div data-testid="openid-more-options-list-input">
+            <Title headingLevel="h3" className="pf-v6-u-mb-sm">
+              {t('public~More options')}
+            </Title>
+            <IDPCAFileInput
+              id="ca-file-input"
+              value={caFileContent}
+              onChange={(c: string) => setCaFileContent(c)}
+            />
+            <ListInput
+              label={t('public~Extra scopes')}
+              id="openid-more-options-extra-scopes"
+              onChange={(c: string[]) => setExtraScopes(c)}
+              helpText={t('public~Any scopes to request in addition to the standard openid scope.')}
+            />
+          </div>
           <ButtonBar errorMessage={errorMessage} inProgress={inProgress}>
             <ActionGroup className="pf-v6-c-form">
               <Button type="submit" variant="primary" data-test-id="add-idp">
@@ -267,7 +280,7 @@ export const AddOpenIDIDPPage = () => {
             </ActionGroup>
           </ButtonBar>
         </form>
-      </div>
+      </PaneBody>
     </div>
   );
 };

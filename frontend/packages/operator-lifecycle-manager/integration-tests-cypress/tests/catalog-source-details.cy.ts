@@ -1,3 +1,4 @@
+import { guidedTour } from '@console/cypress-integration-tests/views/guided-tour';
 import { checkErrors, create, testName } from '../../../integration-tests-cypress/support';
 import { detailsPage } from '../../../integration-tests-cypress/views/details-page';
 import { modal } from '../../../integration-tests-cypress/views/modal';
@@ -12,6 +13,7 @@ const managedCatalogSource = {
 describe(`Interacting with CatalogSource page`, () => {
   before(() => {
     cy.login();
+    guidedTour.close();
     cy.createProjectWithCLI(testName);
     create(testCatalogSource);
   });
@@ -93,8 +95,11 @@ describe(`Interacting with CatalogSource page`, () => {
     cy.byLegacyTestID(testCatalogSource.metadata.name).click();
 
     cy.byTestID('Registry poll interval-details-item__edit-button').click();
-    modal.modalTitleShouldContain('Edit registry poll interval');
-    cy.byLegacyTestID('dropdown-button').click();
+    cy.byTestID('registry-poll-interval-modal-title').should(
+      'contain.text',
+      'Edit registry poll interval',
+    );
+    cy.byTestID('registry-poll-interval-dropdown').click();
     cy.byTestDropDownMenu('30m').should('be.visible').click();
     modal.submit();
 

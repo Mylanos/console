@@ -3,6 +3,7 @@ import * as yamlEditor from '@console/cypress-integration-tests/views/yaml-edito
 import { devNavigationMenu } from '@console/dev-console/integration-tests/support/constants/global';
 import { quickSearchAddPO } from '@console/dev-console/integration-tests/support/pageObjects';
 import { navigateTo, sidePane } from '@console/dev-console/integration-tests/support/pages/app';
+import { checkDeveloperPerspective } from '@console/dev-console/integration-tests/support/pages/functions/checkDeveloperPerspective';
 import { safeYAMLToJS } from '@console/shared/src/utils/yaml';
 import {
   pipelineBuilderPO,
@@ -52,6 +53,17 @@ Then('Create button is in disabled state', () => {
 
 Given('user is at Pipeline Builder page', () => {
   navigateTo(devNavigationMenu.Pipelines);
+  pipelinesPage.clickOnCreatePipeline();
+  pipelineBuilderPage.verifyTitle();
+  cy.get(pipelineBuilderPO.configureVia.pipelineBuilder)
+    .check({ force: true })
+    .should('be.checked');
+});
+
+Given('user is at Pipeline Builder page in admin view', () => {
+  cy.get('[data-test="nav"][data-quickstart-id="qs-nav-pipelines"]')
+    .should('exist')
+    .click({ force: true });
   pipelinesPage.clickOnCreatePipeline();
   pipelineBuilderPage.verifyTitle();
   cy.get(pipelineBuilderPO.configureVia.pipelineBuilder)
@@ -442,7 +454,8 @@ Then('user will be able to see the output in print-motd task', () => {
   cy.get(pipelineRunDetailsPO.logs.logPage).should('be.visible');
 });
 
-Given('user is at pipelines page', () => {
+Given('user is at pipelines page in developer view', () => {
+  checkDeveloperPerspective();
   navigateTo(devNavigationMenu.Pipelines);
   cy.get(pipelinesPO.pipelinesTab).click();
 });
@@ -495,7 +508,9 @@ Given('user has imported YAML {string} and {string}', (task1: string, task2: str
 });
 
 And('user is at YAML view of Pipeline Builder page', () => {
+  checkDeveloperPerspective();
   navigateTo(devNavigationMenu.Pipelines);
+  // cy.get('[data-quickstart-id="qs-nav-pipelines"]').should('exist').click();
   pipelinesPage.clickOnCreatePipeline();
   cy.get(pipelineBuilderPO.yamlView.switchToYAMLView).click();
 });

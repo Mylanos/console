@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Grid, GridItem, ListItem } from '@patternfly/react-core';
 import { ClipboardCopy } from '@patternfly/react-core/dist/dynamic/components/ClipboardCopy';
 import { useTranslation } from 'react-i18next';
 import { ResourceLink, ExternalLinkWithCopy } from '@console/internal/components/utils';
@@ -21,29 +22,25 @@ const KSRoutesOverviewListItem: React.FC<KSRoutesOverviewListItemProps> = ({ ksr
     ksroute?.metadata?.labels?.[PRIVATE_KNATIVE_SERVING_LABEL] === 'cluster-local';
 
   return (
-    <li className="list-group-item">
-      <div className="row">
-        <div className="col-xs-12">
+    <ListItem>
+      <Grid hasGutter>
+        <GridItem>
           <ResourceLink kind={referenceForModel(RouteModel)} name={name} namespace={namespace} />
           {status?.url?.length > 0 && (
             <>
-              <span className="text-muted">{t('knative-plugin~Location:')} </span>
+              <span className="pf-v6-u-text-color-subtle">{t('knative-plugin~Location:')} </span>
               {isPrivateKSVC ? (
                 <ClipboardCopy isReadOnly hoverTip="Copy" clickTip="Copied">
                   {status.url}
                 </ClipboardCopy>
               ) : (
-                <ExternalLinkWithCopy
-                  link={status.url}
-                  text={status.url}
-                  additionalClassName="co-external-link--block"
-                />
+                <ExternalLinkWithCopy href={status.url} text={status.url} displayBlock />
               )}
             </>
           )}
-        </div>
-      </div>
-    </li>
+        </GridItem>
+      </Grid>
+    </ListItem>
   );
 };
 

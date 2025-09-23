@@ -1,16 +1,14 @@
 import * as React from 'react';
+import { List, ListItem } from '@patternfly/react-core';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import {
-  ResourceLink,
-  ExternalLink,
-  SidebarSectionHeading,
-} from '@console/internal/components/utils';
+import { ResourceLink, SidebarSectionHeading } from '@console/internal/components/utils';
 import {
   K8sResourceKind,
   referenceForGroupVersionKind,
   groupVersionFor,
 } from '@console/internal/module/k8s';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import EventSourceOwnedList from './EventSourceOwnedList';
 
 type EventSourceTargetProps = {
@@ -42,8 +40,8 @@ export const EventSourceTarget: React.FC<EventSourceTargetProps> = ({ obj }) => 
     <>
       <SidebarSectionHeading text={t('knative-plugin~Target')} />
       {isSinkReference || sinkUri ? (
-        <ul className="list-group">
-          <li className="list-group-item">
+        <List isPlain isBordered>
+          <ListItem>
             {isSinkReference && (
               <ResourceLink
                 kind={referenceForGroupVersionKind(group)(version)(sinkKind)}
@@ -53,18 +51,18 @@ export const EventSourceTarget: React.FC<EventSourceTargetProps> = ({ obj }) => 
             )}
             {sinkUri && (
               <>
-                <span className="text-muted">{t('knative-plugin~Target URI:')} </span>
-                <ExternalLink
-                  href={sinkUri}
-                  additionalClassName="co-external-link--block"
-                  text={sinkUri}
-                />
+                <span className="pf-v6-u-text-color-subtle">
+                  {t('knative-plugin~Target URI:')}{' '}
+                </span>
+                <ExternalLink href={sinkUri} displayBlock text={sinkUri} />
               </>
             )}
-          </li>
-        </ul>
+          </ListItem>
+        </List>
       ) : (
-        <span className="text-muted">{t('knative-plugin~No sink found for this resource.')}</span>
+        <span className="pf-v6-u-text-color-subtle">
+          {t('knative-plugin~No sink found for this resource.')}
+        </span>
       )}
     </>
   );
@@ -79,15 +77,15 @@ export const EventSourceDeployments: React.FC<EventSourceDeploymentsProps> = ({
       {!_.isEmpty(deploymentObj) ? (
         <>
           <SidebarSectionHeading text={t('knative-plugin~Deployment')} />
-          <ul className="list-group">
-            <li className="list-group-item">
+          <List isPlain isBordered>
+            <ListItem>
               <ResourceLink
                 kind={deploymentObj.kind}
                 name={deploymentObj.metadata.name}
                 namespace={deploymentObj.metadata.namespace}
               />
-            </li>
-          </ul>
+            </ListItem>
+          </List>
         </>
       ) : null}
     </>

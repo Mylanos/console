@@ -2,6 +2,7 @@ import { PVC, PVCGP3, testerDeployment } from '../../mocks/snapshot';
 import { testName, checkErrors } from '../../support';
 import { resourceStatusShouldContain } from '../../views/common';
 import { detailsPage, DetailsPageSelector } from '../../views/details-page';
+import { guidedTour } from '../../views/guided-tour';
 import { listPage } from '../../views/list-page';
 import { modal } from '../../views/modal';
 import { nav } from '../../views/nav';
@@ -23,6 +24,7 @@ if (Cypress.env('BRIDGE_AWS')) {
   describe('Clone Tests', () => {
     before(() => {
       cy.login();
+      guidedTour.close();
       cy.createProjectWithCLI(testName);
       cy.exec(`echo '${JSON.stringify(PVC)}' | oc apply -n ${testName} -f -`);
       cy.exec(`echo '${JSON.stringify(PVCGP3)}' | oc apply -n ${testName} -f -`);
@@ -82,7 +84,7 @@ if (Cypress.env('BRIDGE_AWS')) {
       modal.submitShouldBeEnabled();
       cy.byTestID('input-request-size').clear().type(cloneSize);
       cy.byTestID('storage-class-dropdown').click();
-      cy.byTestID('dropdown-menu-item-link').contains('gp3-csi').click();
+      cy.byTestID('console-select-item').contains('gp3-csi').click();
       modal.submit();
       modal.shouldBeClosed();
       cy.location('pathname').should(

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { Fragment } from 'react';
 import { Tooltip } from '@patternfly/react-core';
 import { TFunction } from 'i18next';
 import * as _ from 'lodash';
@@ -8,9 +8,9 @@ import {
   CatalogItemDetailsProperty,
 } from '@console/dynamic-plugin-sdk';
 import { getImageForIconClass } from '@console/internal/components/catalog/catalog-item-icon';
-import { ExternalLink } from '@console/internal/components/utils';
 import { K8sResourceKind } from '@console/internal/module/k8s';
 import { toTitleCase } from '@console/shared';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import certifiedIcon from '../../../icons/certified.svg';
 import { HelmChartEntries, HelmChartMetaData } from '../../types/helm-types';
 import { getChartRepositoryTitle } from '../../utils/helm-utils';
@@ -74,18 +74,18 @@ export const normalizeHelmCharts = (
           <>
             {chart.maintainers?.map((maintainer, index) => (
               // eslint-disable-next-line react/no-array-index-key
-              <React.Fragment key={index}>
+              <Fragment key={index}>
                 {maintainer.name}
                 <br />
                 <a href={`mailto:${maintainer.email}`}>{maintainer.email}</a>
                 <br />
-              </React.Fragment>
+              </Fragment>
             ))}
           </>
         );
 
         const homePage = chart.home && (
-          <ExternalLink href={chart.home} additionalClassName="co-break-all" text={chart.home} />
+          <ExternalLink href={chart.home} className="co-break-all" text={chart.home} />
         );
 
         const detailsProperties: CatalogItemDetailsProperty[] = [

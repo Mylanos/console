@@ -1,15 +1,31 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
-import { Alert, Button, Popover } from '@patternfly/react-core';
+import {
+  Alert,
+  Button,
+  DescriptionList,
+  DescriptionListDescription,
+  DescriptionListGroup,
+  Card,
+  DescriptionListTerm,
+  Popover,
+  Split,
+  SplitItem,
+  GridItem,
+  Grid,
+} from '@patternfly/react-core';
 import { InProgressIcon } from '@patternfly/react-icons/dist/esm/icons/in-progress-icon';
 import { PencilAltIcon } from '@patternfly/react-icons/dist/esm/icons/pencil-alt-icon';
+import { css } from '@patternfly/react-styles';
 import { sortable } from '@patternfly/react-table';
-import * as classNames from 'classnames';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router-dom-v5-compat';
 import { ResourceStatus, StatusIconAndText } from '@console/dynamic-plugin-sdk';
-import { getGroupVersionKindForModel } from '@console/dynamic-plugin-sdk/src/lib-core';
+import {
+  getGroupVersionKindForModel,
+  K8sResourceKind,
+} from '@console/dynamic-plugin-sdk/src/lib-core';
 import { Conditions } from '@console/internal/components/conditions';
 import {
   DetailsPage,
@@ -19,13 +35,10 @@ import {
   RowFunctionArgs,
 } from '@console/internal/components/factory';
 import {
-  KebabAction,
-  FieldLevelHelp,
   Kebab,
   LoadingInline,
   ConsoleEmptyState,
   navFactory,
-  ResourceKebab,
   ResourceLink,
   resourcePathFromModel,
   ResourceSummary,
@@ -33,13 +46,15 @@ import {
 } from '@console/internal/components/utils';
 import { removeQueryArgument } from '@console/internal/components/utils/router';
 import {
-  referenceForModel,
   k8sGet,
-  k8sPatch,
   k8sKill,
-  k8sUpdate,
-  K8sResourceCommon,
   K8sKind,
+  K8sModel,
+  k8sPatch,
+  K8sResourceCommon,
+  k8sUpdate,
+  referenceFor,
+  referenceForModel,
 } from '@console/internal/module/k8s';
 import {
   BlueArrowCircleUpIcon,
@@ -47,10 +62,14 @@ import {
   getName,
   getNamespace,
   GreenCheckCircleIcon,
+  LazyActionMenu,
   RedExclamationCircleIcon,
   WarningStatus,
   YellowExclamationTriangleIcon,
 } from '@console/shared';
+import { DescriptionListTermHelp } from '@console/shared/src/components/description-list/DescriptionListTermHelp';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
+import PaneBodyGroup from '@console/shared/src/components/layout/PaneBodyGroup';
 import {
   SubscriptionModel,
   ClusterServiceVersionModel,
@@ -78,7 +97,7 @@ import {
 } from './deprecated-operator-warnings/deprecated-operator-warnings';
 import { createInstallPlanApprovalModal } from './modals/installplan-approval-modal';
 import { createSubscriptionChannelModal } from './modals/subscription-channel-modal';
-import { createUninstallOperatorModal } from './modals/uninstall-operator-modal';
+import { useUninstallOperatorModal } from './modals/uninstall-operator-modal';
 import { requireOperatorGroup } from './operator-group';
 import { getManualSubscriptionsInNamespace, NamespaceIncludesManualApproval } from './index';
 
@@ -121,7 +140,7 @@ export const SourceMissingStatus: React.FC = () => {
   return (
     <>
       <WarningStatus title={t('olm~Cannot update')} />
-      <span className="text-muted">{t('olm~CatalogSource not found')}</span>
+      <span className="pf-v6-u-text-color-subtle">{t('olm~CatalogSource not found')}</span>
     </>
   );
 };
@@ -131,7 +150,7 @@ export const SourceUnhealthyStatus: React.FC = () => {
   return (
     <>
       <WarningStatus title={t('olm~Cannot update')} />
-      <span className="text-muted">{t('olm~CatalogSource unhealthy')}</span>
+      <span className="pf-v6-u-text-color-subtle">{t('olm~CatalogSource unhealthy')}</span>
     </>
   );
 };
@@ -190,37 +209,12 @@ export const SubscriptionStatus: React.FC<{ subscription: SubscriptionKind }> = 
       );
     default:
       return (
-        <span className={!subscription?.status?.state ? 'text-muted' : ''}>
+        <span className={!subscription?.status?.state ? 'pf-v6-u-text-color-subtle' : ''}>
           {subscription?.status?.state || t('olm~Unknown failure')}
         </span>
       );
   }
 };
-
-const menuActions: KebabAction[] = [
-  Kebab.factory.Edit,
-  (kind, obj) => ({
-    // t('olm~Remove Subscription')
-    labelKey: 'olm~Remove Subscription',
-    callback: () => createUninstallOperatorModal({ k8sKill, k8sGet, k8sPatch, subscription: obj }),
-    accessReview: {
-      group: kind.apiGroup,
-      resource: kind.plural,
-      name: obj.metadata.name,
-      namespace: obj.metadata.namespace,
-      verb: 'delete',
-    },
-  }),
-  (_kind, obj) => {
-    const installedCSV = _.get(obj, 'status.installedCSV');
-    return {
-      // t('olm~View ClusterServiceVersion...')
-      labelKey: 'olm~View ClusterServiceVersion...',
-      href: `/k8s/ns/${obj.metadata.namespace}/${ClusterServiceVersionModel.plural}/${installedCSV}`,
-      hidden: !installedCSV,
-    };
-  },
-];
 
 export const SubscriptionTableRow: React.FC<RowFunctionArgs> = ({ obj }) => {
   const { t } = useTranslation();
@@ -239,17 +233,17 @@ export const SubscriptionTableRow: React.FC<RowFunctionArgs> = ({ obj }) => {
       <TableData className={tableColumnClasses[2]}>
         <SubscriptionStatus subscription={obj} />
       </TableData>
-      <TableData className={classNames(tableColumnClasses[3], 'co-truncate', 'co-select-to-copy')}>
+      <TableData className={css(tableColumnClasses[3], 'co-truncate', 'co-select-to-copy')}>
         {obj.spec.channel || 'default'}
       </TableData>
       <TableData className={tableColumnClasses[4]}>
         {obj.spec.installPlanApproval || t('olm~Automatic')}
       </TableData>
       <TableData className={tableColumnClasses[5]}>
-        <ResourceKebab
-          actions={menuActions}
-          kind={referenceForModel(SubscriptionModel)}
-          resource={obj}
+        <LazyActionMenu
+          context={{
+            [referenceFor(obj)]: obj,
+          }}
         />
       </TableData>
     </>
@@ -330,7 +324,7 @@ export const SubscriptionsPage: React.FC<SubscriptionsPageProps> = (props) => {
       flatten={(resources) => _.get(resources.subscription, 'data', [])}
       title={t('olm~Subscriptions')}
       canCreate
-      createProps={{ to: '/operatorhub' }}
+      createProps={{ to: '/catalog?catalogType=operator' }}
       createButtonText={t('olm~Create Subscription')}
       ListComponent={SubscriptionsList}
       filterLabel={t('olm~Subscriptions by package')}
@@ -435,16 +429,22 @@ export const SubscriptionDetails: React.FC<SubscriptionDetailsProps> = ({
   const installedCSV = installedCSVForSubscription(clusterServiceVersions, obj);
   const installPlan = installPlanForSubscription(installPlans, obj);
   const pkg = packageForSubscription(packageManifests, obj);
+  const uninstallOperatorModal = useUninstallOperatorModal({
+    k8sKill,
+    k8sGet,
+    k8sPatch,
+    subscription: obj,
+  });
   if (new URLSearchParams(window.location.search).has('showDelete')) {
-    createUninstallOperatorModal({ k8sKill, k8sGet, k8sPatch, subscription: obj })
-      .result.then(() => removeQueryArgument('showDelete'))
-      .catch(_.noop);
+    uninstallOperatorModal();
+    removeQueryArgument('showDelete');
   }
+
   const { deprecatedPackage, deprecatedChannel, deprecatedVersion } = findDeprecatedOperator(obj);
 
   return (
     <>
-      <div className="co-m-pane__body">
+      <PaneBody>
         <CatalogSourceHealthAlert
           health={catalogHealth}
           source={source}
@@ -462,7 +462,7 @@ export const SubscriptionDetails: React.FC<SubscriptionDetailsProps> = ({
           />
         )}
         <SectionHeading text={t('olm~Subscription details')} />
-        <div className="co-m-pane__body-group">
+        <PaneBodyGroup>
           <SubscriptionUpdates
             catalogHealth={catalogHealth}
             pkg={pkg}
@@ -471,16 +471,16 @@ export const SubscriptionDetails: React.FC<SubscriptionDetailsProps> = ({
             installPlan={installPlan}
             subscriptions={subscriptions}
           />
-        </div>
-        <div className="co-m-pane__body-group">
-          <div className="row">
-            <div className="col-sm-6">
-              <ResourceSummary resource={obj} showAnnotations={false} />
-            </div>
-            <div className="col-sm-6">
-              <dl className="co-m-pane__details">
-                <dt>{t('olm~Installed version')}</dt>
-                <dd>
+        </PaneBodyGroup>
+        <Grid hasGutter>
+          <GridItem sm={6}>
+            <ResourceSummary resource={obj} showAnnotations={false} />
+          </GridItem>
+          <GridItem sm={6}>
+            <DescriptionList>
+              <DescriptionListGroup>
+                <DescriptionListTerm>{t('olm~Installed version')}</DescriptionListTerm>
+                <DescriptionListDescription>
                   {installedCSV ? (
                     <ResourceLink
                       kind={referenceForModel(ClusterServiceVersionModel)}
@@ -491,11 +491,17 @@ export const SubscriptionDetails: React.FC<SubscriptionDetailsProps> = ({
                   ) : (
                     t('olm~None')
                   )}
-                </dd>
-                <dt>{t('olm~Starting version')}</dt>
-                <dd>{obj.spec.startingCSV || t('olm~None')}</dd>
-                <dt>{t('olm~CatalogSource')}</dt>
-                <dd>
+                </DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>{t('olm~Starting version')}</DescriptionListTerm>
+                <DescriptionListDescription>
+                  {obj.spec.startingCSV || t('olm~None')}
+                </DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>{t('olm~CatalogSource')}</DescriptionListTerm>
+                <DescriptionListDescription>
                   {source && sourceNamespace ? (
                     <ResourceLink
                       kind={referenceForModel(CatalogSourceModel)}
@@ -510,9 +516,11 @@ export const SubscriptionDetails: React.FC<SubscriptionDetailsProps> = ({
                   ) : (
                     t('olm~None')
                   )}
-                </dd>
-                <dt>{t('olm~InstallPlan')}</dt>
-                <dd>
+                </DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>{t('olm~InstallPlan')}</DescriptionListTerm>
+                <DescriptionListDescription>
                   {installPlan ? (
                     <ResourceLink
                       kind={referenceForModel(InstallPlanModel)}
@@ -523,16 +531,16 @@ export const SubscriptionDetails: React.FC<SubscriptionDetailsProps> = ({
                   ) : (
                     t('olm~None')
                   )}
-                </dd>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="co-m-pane__body">
+                </DescriptionListDescription>
+              </DescriptionListGroup>
+            </DescriptionList>
+          </GridItem>
+        </Grid>
+      </PaneBody>
+      <PaneBody>
         <SectionHeading text={t('olm~Conditions')} />
         <Conditions conditions={obj?.status?.conditions} />
-      </div>
+      </PaneBody>
     </>
   );
 };
@@ -603,104 +611,98 @@ export const SubscriptionUpdates: React.FC<SubscriptionUpdatesProps> = ({
   const { deprecatedChannel } = findDeprecatedOperator(obj);
 
   return (
-    <div className="co-detail-table">
-      <div className="co-detail-table__row row">
-        <div className="co-detail-table__section col-sm-3">
-          <dl className="co-m-pane__details">
-            <dt className="co-detail-table__section-header">
-              {t('olm~Update channel')}
-              <FieldLevelHelp>
-                {t('olm~The channel to track and receive the updates from.')}
-              </FieldLevelHelp>
-            </dt>
-            <dd>
-              {waitingForUpdate ? (
-                <LoadingInline />
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    isInline
-                    onClick={channelModal}
-                    variant="link"
-                    isDisabled={!pkg}
-                    data-test="subscription-channel-update-button"
-                    icon={<PencilAltIcon />}
-                    iconPosition="end"
-                  >
-                    {obj.spec.channel || 'default'}
-                  </Button>
-                  {deprecatedChannel.deprecation && (
-                    <DeprecatedOperatorWarningIcon
-                      dataTest="deprecated-operator-warning-subscription-update-icon"
-                      deprecation={deprecatedChannel.deprecation}
-                    />
-                  )}
-                </>
+    <DescriptionList className="co-detail-table">
+      <Card>
+        <DescriptionListTermHelp
+          text={t('olm~Update channel')}
+          textHelp={t('olm~The channel to track and receive the updates from.')}
+        />
+        <DescriptionListDescription>
+          {waitingForUpdate ? (
+            <LoadingInline />
+          ) : (
+            <>
+              <Button
+                type="button"
+                isInline
+                onClick={channelModal}
+                variant="link"
+                isDisabled={!pkg}
+                data-test="subscription-channel-update-button"
+                icon={<PencilAltIcon />}
+                iconPosition="end"
+              >
+                {obj.spec.channel || t('olm~No channel')}
+              </Button>
+              {deprecatedChannel.deprecation && (
+                <DeprecatedOperatorWarningIcon
+                  dataTest="deprecated-operator-warning-subscription-update-icon"
+                  deprecation={deprecatedChannel.deprecation}
+                />
               )}
-            </dd>
-          </dl>
-        </div>
-        <div className="co-detail-table__section col-sm-3">
-          <dl className="co-m-pane__details">
-            <dt className="co-detail-table__section-header">
-              {t('olm~Update approval')}
-              <FieldLevelHelp>
-                {t('olm~The strategy to determine either manual or automatic updates.')}
-              </FieldLevelHelp>
-            </dt>
-            <dd>
-              {waitingForUpdate ? (
-                <LoadingInline />
-              ) : (
-                <>
+            </>
+          )}
+        </DescriptionListDescription>
+      </Card>
+      <Card>
+        <DescriptionListTermHelp
+          text={t('olm~Update approval')}
+          textHelp={t('olm~The strategy to determine either manual or automatic updates.')}
+        />
+        <DescriptionListDescription>
+          {waitingForUpdate ? (
+            <LoadingInline />
+          ) : (
+            <>
+              <div>
+                <Button
+                  icon={<PencilAltIcon />}
+                  iconPosition="end"
+                  type="button"
+                  isInline
+                  onClick={approvalModal}
+                  variant="link"
+                >
+                  {obj.spec.installPlanApproval || 'Automatic'}
+                </Button>
+              </div>
+              {obj.spec.installPlanApproval === InstallPlanApproval.Automatic &&
+                manualSubscriptionsInNamespace?.length > 0 && (
                   <div>
-                    <Button
-                      icon={<PencilAltIcon />}
-                      iconPosition="end"
-                      type="button"
-                      isInline
-                      onClick={approvalModal}
-                      variant="link"
+                    <Popover
+                      headerContent={<>{t('olm~Functioning as manual approval strategy')}</>}
+                      bodyContent={
+                        <NamespaceIncludesManualApproval
+                          subscriptions={manualSubscriptionsInNamespace}
+                          namespace={obj.metadata.namespace}
+                        />
+                      }
                     >
-                      {obj.spec.installPlanApproval || 'Automatic'}
-                    </Button>
+                      <Button type="button" isInline variant="link">
+                        <BlueInfoCircleIcon className="co-icon-space-r" />
+                        {t('olm~Functioning as manual')}
+                      </Button>
+                    </Popover>
                   </div>
-                  {obj.spec.installPlanApproval === InstallPlanApproval.Automatic &&
-                    manualSubscriptionsInNamespace?.length > 0 && (
-                      <div>
-                        <Popover
-                          headerContent={<>{t('olm~Functioning as manual approval strategy')}</>}
-                          bodyContent={
-                            <NamespaceIncludesManualApproval
-                              subscriptions={manualSubscriptionsInNamespace}
-                              namespace={obj.metadata.namespace}
-                            />
-                          }
-                        >
-                          <Button type="button" isInline variant="link">
-                            <BlueInfoCircleIcon className="co-icon-space-r" />
-                            {t('olm~Functioning as manual')}
-                          </Button>
-                        </Popover>
-                      </div>
-                    )}
-                </>
-              )}
-            </dd>
-          </dl>
-        </div>
-        <div className="co-detail-table__section co-detail-table__section--last col-sm-6">
-          <dl className="co-m-pane__details">
-            <dt className="co-detail-table__section-header">{t('olm~Upgrade status')}</dt>
-            <dd>
+                )}
+            </>
+          )}
+        </DescriptionListDescription>
+      </Card>
+      <Card>
+        <Split>
+          <SplitItem>
+            <DescriptionListTerm>{t('olm~Upgrade status')}</DescriptionListTerm>
+            <DescriptionListDescription>
               <SubscriptionUpgradeStatus catalogHealth={catalogHealth} subscription={obj} />
-            </dd>
-          </dl>
+            </DescriptionListDescription>
+          </SplitItem>
           {catalogHealth && catalogHealth.healthy && (
             <>
-              <div className="co-detail-table__bracket" />
-              <div className="co-detail-table__breakdown">
+              <SplitItem>
+                <div className="co-detail-table__bracket" />
+              </SplitItem>
+              <SplitItem className="co-detail-table__breakdown">
                 {obj?.status?.installedCSV && installedCSV ? (
                   <Link
                     to={`/k8s/ns/${obj.metadata.namespace}/${referenceForModel(
@@ -725,12 +727,12 @@ export const SubscriptionUpdates: React.FC<SubscriptionUpdatesProps> = ({
                 ) : (
                   <span>{t('olm~0 installing')}</span>
                 )}
-              </div>
+              </SplitItem>
             </>
           )}
-        </div>
-      </div>
-    </div>
+        </Split>
+      </Card>
+    </DescriptionList>
   );
 };
 
@@ -769,7 +771,9 @@ export const SubscriptionDetailsPage: React.FC<SubscriptionDetailsPageProps> = (
           prop: 'subscriptions',
         },
       ]}
-      menuActions={menuActions}
+      customActionMenu={(kindObj: K8sModel, obj: K8sResourceKind) => (
+        <LazyActionMenu context={{ [referenceFor(kindObj)]: obj }} />
+      )}
     />
   );
 };

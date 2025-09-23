@@ -12,6 +12,7 @@ import { useActivePerspective, Perspective } from '@console/dynamic-plugin-sdk';
 import { useDynamicPluginInfo } from '@console/plugin-sdk/src/api/useDynamicPluginInfo';
 import { FLAGS, useUserSettings, getPerspectiveVisitedKey, usePerspectives } from '@console/shared';
 import { ErrorBoundaryPage } from '@console/shared/src/components/error';
+import { getReferenceForModel } from '@console/dynamic-plugin-sdk/src/utils/k8s';
 import { connectToFlags } from '../reducers/connectToFlags';
 import { flagPending, FlagsObject } from '../reducers/features';
 import { GlobalNotifications } from './global-notifications';
@@ -179,6 +180,14 @@ const AppContents: React.FC<{}> = () => {
       <Route path="/overview/all-namespaces" element={<Navigate to="/dashboards" replace />} />
       <Route path="/overview/ns/:ns" element={<OverviewProjectsRedirect />} />
       <Route path="/overview" element={<NamespaceRedirect />} />
+      <Route
+        path="/monitoring/alertmanagerconfig"
+        element={<Navigate to="/settings/cluster/alertmanagerconfig" replace />}
+      />
+      <Route
+        path="/monitoring/alertmanageryaml"
+        element={<Navigate to="/settings/cluster/alertmanageryaml" replace />}
+      />
 
       <Route
         path="/api-explorer"
@@ -241,8 +250,6 @@ const AppContents: React.FC<{}> = () => {
           />
         }
       />
-
-      <Route path="/operatorhub" element={<NamespaceRedirect />} />
 
       <Route
         path="/catalog/instantiate-template"
@@ -380,76 +387,6 @@ const AppContents: React.FC<{}> = () => {
       />
 
       <Route
-        path="/k8s/ns/:ns/networkpolicies/~new/form"
-        element={
-          <AsyncComponent
-            kind="NetworkPolicy"
-            loader={() =>
-              import(
-                '@console/app/src/components/network-policies/create-network-policy' /* webpackChunkName: "create-network-policy" */
-              ).then((m) => m.CreateNetworkPolicy)
-            }
-          />
-        }
-      />
-
-      <Route
-        path="/k8s/ns/:ns/networking.k8s.io~v1~NetworkPolicy/~new/form"
-        element={
-          <AsyncComponent
-            kind="NetworkPolicy"
-            loader={() =>
-              import(
-                '@console/app/src/components/network-policies/create-network-policy' /* webpackChunkName: "create-network-policy" */
-              ).then((m) => m.CreateNetworkPolicy)
-            }
-          />
-        }
-      />
-
-      <Route
-        path="/k8s/ns/:ns/k8s.cni.cncf.io~v1beta1~MultiNetworkPolicy/~new/form"
-        element={
-          <AsyncComponent
-            kind="NetworkPolicy"
-            loader={() =>
-              import(
-                '@console/app/src/components/network-policies/create-network-policy' /* webpackChunkName: "create-network-policy" */
-              ).then((m) => m.CreateNetworkPolicy)
-            }
-          />
-        }
-      />
-
-      <Route
-        path="/k8s/ns/:ns/routes/~new/form"
-        element={
-          <AsyncComponent
-            kind="Route"
-            loader={() =>
-              import('./routes/RoutePage' /* webpackChunkName: "create-route" */).then(
-                (m) => m.RoutePage,
-              )
-            }
-          />
-        }
-      />
-
-      <Route
-        path="/k8s/ns/:ns/routes/:name/form"
-        element={
-          <AsyncComponent
-            kind="Route"
-            loader={() =>
-              import('./routes/RoutePage' /* webpackChunkName: "edit-route" */).then(
-                (m) => m.RoutePage,
-              )
-            }
-          />
-        }
-      />
-
-      <Route
         path="/k8s/cluster/rolebindings/~new"
         element={
           <AsyncComponent
@@ -555,51 +492,11 @@ const AppContents: React.FC<{}> = () => {
         }
       />
       <Route
-        path={`/k8s/all-namespaces/${VolumeSnapshotModel.plural}/~new/form`}
+        path={`/k8s/all-namespaces/${VolumeSnapshotModel.plural}`}
         element={
-          <AsyncComponent
-            loader={() =>
-              import(
-                '@console/app/src/components/volume-snapshot/create-volume-snapshot/create-volume-snapshot' /* webpackChunkName: "create-volume-snapshot" */
-              ).then((m) => m.VolumeSnapshot)
-            }
-          />
-        }
-      />
-
-      <Route
-        path="/monitoring/alertmanagerconfig/receivers/~new"
-        element={
-          <AsyncComponent
-            loader={() =>
-              import(
-                './monitoring/receiver-forms/alert-manager-receiver-forms' /* webpackChunkName: "receiver-forms" */
-              ).then((m) => m.CreateReceiver)
-            }
-          />
-        }
-      />
-      <Route
-        path="/monitoring/alertmanagerconfig/receivers/:name/edit"
-        element={
-          <AsyncComponent
-            loader={() =>
-              import(
-                './monitoring/receiver-forms/alert-manager-receiver-forms' /* webpackChunkName: "receiver-forms" */
-              ).then((m) => m.EditReceiver)
-            }
-          />
-        }
-      />
-      <Route
-        path="/monitoring/*"
-        element={
-          <AsyncComponent
-            loader={() =>
-              import('./monitoring/alerting' /* webpackChunkName: "alerting" */).then(
-                (m) => m.MonitoringUI,
-              )
-            }
+          <Navigate
+            to={`/k8s/all-namespaces/${getReferenceForModel(VolumeSnapshotModel)}`}
+            replace
           />
         }
       />
@@ -736,6 +633,54 @@ const AppContents: React.FC<{}> = () => {
           />
         }
       />
+      <Route
+        path="/settings/cluster/alertmanagerconfig"
+        element={
+          <AsyncComponent
+            loader={() =>
+              import(
+                './monitoring/alertmanager/alertmanager-config' /* webpackChunkName: "alertmanager-config" */
+              ).then((m) => m.AlertmanagerConfig)
+            }
+          />
+        }
+      />
+      <Route
+        path="/settings/cluster/alertmanagerconfig/receivers/~new"
+        element={
+          <AsyncComponent
+            loader={() =>
+              import(
+                './monitoring/receiver-forms/alert-manager-receiver-forms' /* webpackChunkName: "receiver-forms" */
+              ).then((m) => m.CreateReceiver)
+            }
+          />
+        }
+      />
+      <Route
+        path="/settings/cluster/alertmanagerconfig/receivers/:name/edit"
+        element={
+          <AsyncComponent
+            loader={() =>
+              import(
+                './monitoring/receiver-forms/alert-manager-receiver-forms' /* webpackChunkName: "receiver-forms" */
+              ).then((m) => m.EditReceiver)
+            }
+          />
+        }
+      />
+      <Route
+        path="/settings/cluster/alertmanageryaml"
+        element={
+          <AsyncComponent
+            loader={() =>
+              import(
+                './monitoring/alertmanager/alertmanager-yaml-editor' /* webpackChunkName: "alertmanager-yaml-editor" */
+              ).then((m) => m.default)
+            }
+          />
+        }
+      />
 
       <Route
         path={'/k8s/cluster/storageclasses/~new/form'}
@@ -815,7 +760,7 @@ const AppContents: React.FC<{}> = () => {
   const matches = matchRoutes(namespacedRoutes, location);
 
   return (
-    <div id="content">
+    <>
       <PageSection
         hasBodyWrapper={false}
         padding={{ default: 'noPadding' }}
@@ -824,25 +769,19 @@ const AppContents: React.FC<{}> = () => {
         <GlobalNotifications />
         {matches && <NamespaceBar />}
       </PageSection>
-      <div id="content-scrollable">
-        <PageSection
-          hasBodyWrapper={false}
-          className="pf-v6-c-page__main-section--expanded pf-v6-c-page__main-section--no-gap"
-          padding={{ default: 'noPadding' }}
-        >
-          <ErrorBoundaryPage>
-            <React.Suspense fallback={<LoadingBox />}>{contentRouter}</React.Suspense>
-          </ErrorBoundaryPage>
-        </PageSection>
-      </div>
       <PageSection
+        isFilled={true}
         hasBodyWrapper={false}
         padding={{ default: 'noPadding' }}
-        className="pf-v6-c-page__main-section--no-gap"
+        className="pf-v6-c-page__main-section--no-gap pf-v6-u-flex-shrink-1"
+        id="content-scrollable"
       >
-        <TelemetryNotifier />
+        <ErrorBoundaryPage>
+          <React.Suspense fallback={<LoadingBox />}>{contentRouter}</React.Suspense>
+        </ErrorBoundaryPage>
       </PageSection>
-    </div>
+      <TelemetryNotifier />
+    </>
   );
 };
 

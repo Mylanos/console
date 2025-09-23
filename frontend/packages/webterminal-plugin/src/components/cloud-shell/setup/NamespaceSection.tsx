@@ -7,10 +7,11 @@ import { ProjectModel } from '@console/internal/models';
 import { connectToFlags, WithFlagsProps } from '@console/internal/reducers/connectToFlags';
 import { InputField, ResourceDropdownField, useFormikValidationFix, FLAGS } from '@console/shared';
 import { CREATE_NAMESPACE_KEY } from './cloud-shell-setup-utils';
+import './NamespaceSection.scss';
 
 type NamespaceSectionProps = WithFlagsProps;
 
-const NamespaceSection: React.FC<NamespaceSectionProps> = ({ flags }) => {
+const NamespaceSection: React.FCC<NamespaceSectionProps> = ({ flags }) => {
   const canCreateNs = flags[FLAGS.CAN_CREATE_NS];
   const canCreateProject = flags[FLAGS.CAN_CREATE_PROJECT];
   const canCreate = canCreateNs || canCreateProject;
@@ -44,6 +45,7 @@ const NamespaceSection: React.FC<NamespaceSectionProps> = ({ flags }) => {
     <>
       <ResourceDropdownField
         name="namespace"
+        dataTest="webterminal-namespace-dropdown"
         label={t('webterminal-plugin~Project')}
         placeholder={t('webterminal-plugin~Select Project')}
         fullWidth
@@ -74,12 +76,14 @@ const NamespaceSection: React.FC<NamespaceSectionProps> = ({ flags }) => {
         )}
       />
       {namespace.value === CREATE_NAMESPACE_KEY && (
-        <InputField
-          type={TextInputTypes.text}
-          required
-          name="newNamespace"
-          label={t('webterminal-plugin~Project name')}
-        />
+        <div className="wt-project-name" data-test="input-field-newNamespace">
+          <InputField
+            type={TextInputTypes.text}
+            required
+            name="newNamespace"
+            label={t('webterminal-plugin~Project name')}
+          />
+        </div>
       )}
     </>
   );

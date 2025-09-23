@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo, useState, useEffect, createRef } from 'react';
 import {
   Tabs,
   Tab,
@@ -6,8 +6,8 @@ import {
   TabTitleText,
   TabContent,
   TabContentProps,
+  PageSection,
 } from '@patternfly/react-core';
-import Helmet from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom-v5-compat';
 import {
@@ -22,10 +22,11 @@ import { useExtensions } from '@console/plugin-sdk/src';
 import {
   isModifiedEvent,
   orderExtensionBasedOnInsertBeforeAndAfter,
-  PageLayout,
   useQueryParams,
   Spotlight,
 } from '@console/shared';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
 import { USER_PREFERENCES_BASE_URL } from './const';
 import {
   UserPreferenceTabGroup,
@@ -56,20 +57,23 @@ const UserPreferencePage: React.FC = () => {
   const { group: groupIdFromUrl } = useParams();
   const initialTabId =
     sortedUserPreferenceGroups.find((extension) => extension.id === groupIdFromUrl)?.id ||
-    sortedUserPreferenceGroups[0]?.id;
-  const [activeTabId, setActiveTabId] = React.useState<string>(initialTabId);
+    sortedUserPreferenceGroups[0]?.id ||
+    'general';
+  const [activeTabId, setActiveTabId] = useState<string>(initialTabId);
 
-  const [userPreferenceTabs, userPreferenceTabContents] = React.useMemo<
+  const [userPreferenceTabs, userPreferenceTabContents] = useMemo<
     [React.ReactElement<TabProps>[], React.ReactElement<TabContentProps>[]]
   >(() => {
     const populatedUserPreferenceGroups: UserPreferenceTabGroup[] = getUserPreferenceGroups(
       sortedUserPreferenceGroups,
       sortedUserPreferenceItems,
     );
-    const [tabs, tabContents] = populatedUserPreferenceGroups.reduce(
+    const [tabs, tabContents] = populatedUserPreferenceGroups.reduce<
+      [React.ReactElement<TabProps>[], React.ReactElement<TabContentProps>[]]
+    >(
       (acc, currGroup) => {
         const { id, label, items } = currGroup;
-        const ref = React.createRef<HTMLElement>();
+        const ref = createRef<HTMLElement>();
         acc[0].push(
           <Tab
             key={id}
@@ -101,13 +105,16 @@ const UserPreferencePage: React.FC = () => {
   }, [activeTabId, sortedUserPreferenceGroups, sortedUserPreferenceItems]);
 
   const queryParams = useQueryParams();
-  const spotlight = decodeURIComponent(queryParams.get('spotlight'));
-  const [spotlightElement, setSpotlightElement] = React.useState<Element>(null);
+  const spotlightParam = queryParams.get('spotlight');
+  const spotlight = spotlightParam ? decodeURIComponent(spotlightParam) : '';
+  const [spotlightElement, setSpotlightElement] = useState<Element | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setActiveTabId(groupIdFromUrl ?? 'general');
-    const element = document.querySelector(spotlight);
-    setSpotlightElement(element);
+    if (spotlight) {
+      const element = document.querySelector(spotlight);
+      setSpotlightElement(element);
+    }
   }, [groupIdFromUrl, spotlight, userPreferenceItemResolved, userPreferenceTabContents]);
 
   // utils and callbacks
@@ -122,19 +129,18 @@ const UserPreferencePage: React.FC = () => {
   const activeTab = sortedUserPreferenceGroups.find((group) => group.id === activeTabId)?.label;
   return (
     <div className="co-user-preference-page">
-      <Helmet>
-        <title>
-          {activeTab
-            ? t('console-app~User Preferences {{activeTab}}', { activeTab })
-            : t('console-app~User Preferences')}
-        </title>
-      </Helmet>
-      <PageLayout
+      <DocumentTitle>
+        {activeTab
+          ? t('console-app~User Preferences {{activeTab}}', { activeTab })
+          : t('console-app~User Preferences')}
+      </DocumentTitle>
+      <PageHeading
         title={t('console-app~User Preferences')}
-        hint={t(
+        helpText={t(
           'console-app~Set your individual preferences for the console experience. Any changes will be autosaved.',
         )}
-      >
+      />
+      <PageSection>
         {userPreferenceItemResolved ? (
           <div className="co-user-preference-page-content">
             <div className="co-user-preference-page-content__tabs">
@@ -156,7 +162,7 @@ const UserPreferencePage: React.FC = () => {
         ) : (
           <LoadingBox />
         )}
-      </PageLayout>
+      </PageSection>
     </div>
   );
 };

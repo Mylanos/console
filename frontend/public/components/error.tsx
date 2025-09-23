@@ -1,54 +1,59 @@
 import * as React from 'react';
-import { Helmet } from 'react-helmet';
-import { Trans, useTranslation } from 'react-i18next';
-import {
-  CodeBlock,
-  CodeBlockCode,
-  EmptyState,
-  EmptyStateBody,
-  Stack,
-  StackItem,
-  EmptyStateActions,
-  Icon,
-  Title,
-} from '@patternfly/react-core';
-import { ExclamationCircleIcon } from '@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon';
-import { t_global_icon_color_status_danger_default as globalDangerColor100 } from '@patternfly/react-tokens';
-
-import { PageHeading } from './utils';
 import { useLocation } from 'react-router';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
+import { ButtonLink } from '@console/shared/src/components/links/ButtonLink';
+import {
+  ErrorState as PfErrorState,
+  ErrorStateProps as PfErrorStateProps,
+  NotFoundIcon,
+} from '@patternfly/react-component-groups';
+import { Trans, useTranslation } from 'react-i18next';
+import { CodeBlock, CodeBlockCode, Stack, StackItem } from '@patternfly/react-core';
+import { useFavoritesOptions } from './useFavoritesOptions';
 
-const ErrorComponent: React.FC<ErrorComponentProps> = ({ title, message }) => {
+export const ErrorPage404: React.FC<PfErrorStateProps> = (props) => {
   const { t } = useTranslation();
+  const location = useLocation();
+
+  const [favorites, , loaded] = useFavoritesOptions();
+
+  const currentPath = location?.pathname;
+  const queryParams = new URLSearchParams(location?.search);
+  const fromFavorites = queryParams.get('from') === 'favorites';
+
+  const isDeletedFavorite =
+    fromFavorites && loaded && favorites?.some((fav) => fav.url === currentPath);
+
   return (
     <>
-      <PageHeading title={t('public~Error')} detail />
-      <div className="co-m-pane__body" data-test-id="error-page">
-        <PageHeading title={title} centerText />
-        {message && <div className="pf-v6-u-text-align-center">{message}</div>}
-      </div>
+      <DocumentTitle>{t('public~Page Not Found (404)')}</DocumentTitle>
+      <PfErrorState
+        status="none"
+        icon={NotFoundIcon}
+        headingLevel="h1"
+        titleText={t('public~404: Page Not Found')}
+        defaultBodyText={
+          <>
+            {t("public~We couldn't find that page.")}
+            {isDeletedFavorite && (
+              <p>
+                {t(
+                  'public~If you would like to remove it from your favorites list, unfavorite it.',
+                )}
+              </p>
+            )}
+          </>
+        }
+        customFooter={
+          <ButtonLink variant="link" href="/">
+            {t('public~Return to homepage')}
+          </ButtonLink>
+        }
+        {...props}
+      />
     </>
   );
 };
-
-export const ErrorPage404: React.FC<ErrorPage404Props> = (props) => {
-  const { t } = useTranslation();
-  return (
-    <div>
-      <Helmet>
-        <title>{t('public~Page Not Found (404)')}</title>
-      </Helmet>
-      <ErrorComponent title={t('public~404: Page Not Found')} message={props.message} />
-    </div>
-  );
-};
-
-export type ErrorComponentProps = {
-  title: string;
-  message?: string;
-};
-
-export type ErrorPage404Props = Omit<ErrorComponentProps, 'title'>;
 
 const ErrorStateMessage = () => (
   <Trans ns="public">
@@ -60,19 +65,12 @@ const ErrorStateMessage = () => (
 
 export const ErrorState: React.FC = () => {
   const { t } = useTranslation();
-  const DangerIcon = () => (
-    <Icon size="sm">
-      <ExclamationCircleIcon color={globalDangerColor100.value} />
-    </Icon>
-  );
+
   return (
-    <EmptyState
-      headingLevel="h6"
-      icon={DangerIcon}
-      titleText={<>{t('public~Something went wrong')}</>}
-      variant="xs"
-    >
-      <EmptyStateBody>
+    <PfErrorState
+      titleText={t('public~An error occured')}
+      headingLevel="h1"
+      bodyText={
         <Stack>
           <StackItem>
             {t('public~There was a problem processing the request. Please try again.')}
@@ -81,8 +79,8 @@ export const ErrorState: React.FC = () => {
             <ErrorStateMessage />
           </StackItem>
         </Stack>
-      </EmptyStateBody>
-    </EmptyState>
+      }
+    />
   );
 };
 
@@ -99,19 +97,27 @@ const LoginErrorMessage: React.FC = () => {
       return t('public~There was an error generating login state.');
     case 'cookie_error':
       return t('public~There was an error setting login state cookie');
-    case 'missing_code':
-      return t('public~Auth code is missing in query param.');
-    case 'missing_state':
-      return t('public~There was an error parsing your state cookie');
-    case 'invalid_code':
-      return t('public~There was an error logging you in. Please log out and try again.');
-    case 'invalid_state':
-      return t('public~There was an error verifying your session. Please log out and try again.');
     case 'logout_error':
       return t('public~There was an error logging you out. Please try again.');
+    case 'auth':
+      // When the error type is set as auth
+      switch (error) {
+        case 'missing_state':
+          return t('public~There was an error parsing your state cookie');
+        case 'invalid_state':
+          return t(
+            'public~There was an error verifying your session. Please log out and try again.',
+          );
+        case 'missing_code':
+          return t('public~Auth code is missing in query param.');
+        case 'invalid_code':
+          return t('public~There was an error logging you in. Please log out and try again.');
+        default:
+          return t('public~There was an authentication error. Please log out and try again.');
+      }
     default:
       return (
-        <Trans>
+        <Trans ns="public">
           There was an authentication error with the system:
           <CodeBlock>
             <CodeBlockCode>{error}</CodeBlockCode>
@@ -124,13 +130,14 @@ const LoginErrorMessage: React.FC = () => {
 export const AuthenticationErrorPage: React.FC = () => {
   const { t } = useTranslation();
   const title = t('public~Authentication error');
+
   return (
     <>
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
-      <EmptyState titleText={<Title headingLevel="h1">{title}</Title>} icon={ExclamationCircleIcon}>
-        <EmptyStateBody>
+      <DocumentTitle>{title}</DocumentTitle>
+      <PfErrorState
+        headingLevel="h1"
+        titleText={title}
+        bodyText={
           <Stack>
             <StackItem>
               <LoginErrorMessage />
@@ -139,11 +146,13 @@ export const AuthenticationErrorPage: React.FC = () => {
               <ErrorStateMessage />
             </StackItem>
           </Stack>
-        </EmptyStateBody>
-        <EmptyStateActions>
-          <a href="/logout">{t('public~Try again')}</a>
-        </EmptyStateActions>
-      </EmptyState>
+        }
+        customFooter={
+          <ButtonLink variant="primary" href="/logout">
+            {t('public~Try again')}
+          </ButtonLink>
+        }
+      />
     </>
   );
 };

@@ -7,24 +7,41 @@ import {
   isHrefNavItem,
   isResourceNSNavItem,
   isResourceNavItem,
+  useActivePerspective,
 } from '@console/dynamic-plugin-sdk';
 import { LoadedExtension } from '@console/dynamic-plugin-sdk/src/types';
+import { FavoriteNavItems } from '../favorite/FavoriteNavItems';
 import { NavItemHref } from './NavItemHref';
 import { NavItemResource } from './NavItemResource';
 import { NavSection } from './NavSection';
 
 export const PluginNavItem: React.FC<PluginNavItemProps> = ({ extension }) => {
+  const [activePerspective] = useActivePerspective();
   if (isNavSection(extension)) {
     return (
-      <NavSection
-        id={extension.properties.id}
-        name={extension.properties.name}
-        dataAttributes={extension.properties.dataAttributes}
-      />
+      <>
+        <NavSection
+          id={extension.properties.id}
+          name={extension.properties.name}
+          dataAttributes={extension.properties.dataAttributes}
+        />
+        {extension.properties.id === 'home' && activePerspective === 'admin' && (
+          <FavoriteNavItems />
+        )}
+      </>
     );
   }
   if (isSeparator(extension)) {
-    return <NavItemSeparator key={extension.uid} {...extension.properties.dataAttributes} />;
+    // changed role due to accessibility violation
+    // [role=separator] is not allowed under a role=list
+    // https://github.com/patternfly/patternfly-react/issues/11717
+    return (
+      <NavItemSeparator
+        role="presentation"
+        key={extension.uid}
+        {...extension.properties.dataAttributes}
+      />
+    );
   }
   if (isHrefNavItem(extension)) {
     return (

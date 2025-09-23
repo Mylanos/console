@@ -1,9 +1,9 @@
-import * as React from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom-v5-compat';
 import { PerspectiveType } from '@console/dynamic-plugin-sdk';
 import { usePerspectiveExtension, usePerspectives, useTelemetry } from '@console/shared';
 import { ACM_PERSPECTIVE_ID } from '../../consts';
-import { usePreferredPerspective } from '../user-preferences';
+import { usePreferredPerspective } from '../user-preferences/perspective/usePreferredPerspective';
 import { useLastPerspective } from './useLastPerspective';
 
 export const useValuesForPerspectiveContext = (): [
@@ -16,13 +16,15 @@ export const useValuesForPerspectiveContext = (): [
   const perspectiveExtensions = usePerspectives();
   const [lastPerspective, setLastPerspective, lastPerspectiveLoaded] = useLastPerspective();
   const [preferredPerspective, , preferredPerspectiveLoaded] = usePreferredPerspective();
-  const [activePerspective, setActivePerspective] = React.useState('');
+  const [activePerspective, setActivePerspective] = useState('');
   const loaded = lastPerspectiveLoaded && preferredPerspectiveLoaded;
   const latestPerspective = loaded && (preferredPerspective || lastPerspective);
   const acmPerspectiveExtension = usePerspectiveExtension(ACM_PERSPECTIVE_ID);
   const existingPerspective = activePerspective || latestPerspective;
   const perspective =
-    !!acmPerspectiveExtension && !existingPerspective ? ACM_PERSPECTIVE_ID : existingPerspective;
+    !!acmPerspectiveExtension && !existingPerspective
+      ? ACM_PERSPECTIVE_ID
+      : existingPerspective || '';
   const isValidPerspective =
     loaded && perspectiveExtensions.some((p) => p.properties.id === perspective);
 
@@ -32,9 +34,7 @@ export const useValuesForPerspectiveContext = (): [
     // Navigate to next or root and let the default page determine where to go to next
     navigate(next || '/');
     fireTelemetryEvent('Perspective Changed', { perspective: newPerspective });
-    // eslint-disable-next-line no-console
-    console.log('DEBUG: setting perspective', newPerspective, next);
   };
 
-  return [isValidPerspective ? perspective : undefined, setPerspective, loaded];
+  return [isValidPerspective ? perspective : '', setPerspective, loaded];
 };

@@ -1,10 +1,11 @@
 import * as React from 'react';
+import { List, ListItem } from '@patternfly/react-core';
 import { LongArrowAltRightIcon } from '@patternfly/react-icons/dist/esm/icons/long-arrow-alt-right-icon';
 import { useTranslation } from 'react-i18next';
-import { RouteLocation } from '@console/internal/components/routes';
 import { ResourceLink, SidebarSectionHeading } from '@console/internal/components/utils';
 import { K8sResourceKind, RouteKind } from '@console/internal/module/k8s';
 import { useRoutesWatcher, useServicesWatcher } from '@console/shared';
+import { RouteLocation } from '@console/shared/src/components/utils/routes';
 
 const ServicePortList: React.FC<ServicePortListProps> = ({ service }) => {
   const ports = service.spec?.ports ?? [];
@@ -13,12 +14,12 @@ const ServicePortList: React.FC<ServicePortListProps> = ({ service }) => {
     <ul className="port-list">
       {ports.map(({ name, port, protocol, targetPort }) => (
         <li key={name || `${protocol}/${port}`}>
-          <span className="text-muted">{t('topology~Service port:')}</span>{' '}
+          <span className="pf-v6-u-text-color-subtle">{t('topology~Service port:')}</span>{' '}
           {name || `${protocol}/${port}`}
           &nbsp;
           <LongArrowAltRightIcon />
           &nbsp;
-          <span className="text-muted">{t('topology~Pod port:')}</span> {targetPort}
+          <span className="pf-v6-u-text-color-subtle">{t('topology~Pod port:')}</span> {targetPort}
         </li>
       ))}
     </ul>
@@ -28,39 +29,39 @@ const ServicePortList: React.FC<ServicePortListProps> = ({ service }) => {
 const ServicesOverviewListItem: React.FC<ServiceOverviewListItemProps> = ({ service }) => {
   const { name, namespace } = service.metadata;
   return (
-    <li className="list-group-item">
+    <ListItem>
       <ResourceLink kind="Service" name={name} namespace={namespace} />
       <ServicePortList service={service} />
-    </li>
+    </ListItem>
   );
 };
 
 const ServicesOverviewList: React.FC<ServiceOverviewListProps> = ({ services }) => (
-  <ul className="list-group">
+  <List isPlain isBordered>
     {services?.map((service) => (
       <ServicesOverviewListItem key={service.metadata.uid} service={service} />
     ))}
-  </ul>
+  </List>
 );
 
 const RoutesOverviewListItem: React.FC<RoutesOverviewListItemProps> = ({ route }) => {
   const { name, namespace } = route.metadata;
   const { t } = useTranslation();
   return (
-    <li className="list-group-item">
+    <ListItem>
       <ResourceLink kind="Route" name={name} namespace={namespace} />
-      <span className="text-muted">{t('topology~Location:')}</span>
+      <span className="pf-v6-u-text-color-subtle">{t('topology~Location:')}</span>
       <RouteLocation obj={route} />
-    </li>
+    </ListItem>
   );
 };
 
 const RoutesOverviewList: React.FC<RoutesOverviewListProps> = ({ routes }) => (
-  <ul className="list-group">
+  <List isPlain isBordered>
     {routes?.map((route) => (
       <RoutesOverviewListItem key={route.metadata.uid} route={route} />
     ))}
-  </ul>
+  </List>
 );
 
 export const NetworkingOverview: React.FC<NetworkingOverviewProps> = ({ obj }) => {
@@ -74,14 +75,18 @@ export const NetworkingOverview: React.FC<NetworkingOverviewProps> = ({ obj }) =
     <>
       <SidebarSectionHeading text={t('topology~Services')} />
       {!(services?.length > 0) ? (
-        <span className="text-muted">{t('topology~No Services found for this resource.')}</span>
+        <span className="pf-v6-u-text-color-subtle">
+          {t('topology~No Services found for this resource.')}
+        </span>
       ) : (
         <ServicesOverviewList services={services} />
       )}
 
       <SidebarSectionHeading text={t('topology~Routes')} />
       {!(routes?.length > 0) ? (
-        <span className="text-muted">{t('topology~No Routes found for this resource.')}</span>
+        <span className="pf-v6-u-text-color-subtle">
+          {t('topology~No Routes found for this resource.')}
+        </span>
       ) : (
         <RoutesOverviewList routes={routes} />
       )}

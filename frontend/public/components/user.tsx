@@ -1,11 +1,18 @@
 import * as React from 'react';
-import { connect } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom-v5-compat';
 import * as _ from 'lodash-es';
-import { Button, Content } from '@patternfly/react-core';
+import {
+  Button,
+  Content,
+  DescriptionListDescription,
+  DescriptionListGroup,
+  DescriptionListTerm,
+} from '@patternfly/react-core';
 import { sortable } from '@patternfly/react-table';
 
 import { useCanEditIdentityProviders, useOAuthData } from '@console/shared/src/hooks/oauth';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import * as UIActions from '../actions/ui';
 import { OAuthModel, UserModel } from '../models';
 import { K8sKind, referenceForModel, UserKind } from '../module/k8s';
@@ -27,16 +34,14 @@ import { useTranslation } from 'react-i18next';
 
 const tableColumnClasses = ['', '', 'pf-m-hidden pf-m-visible-on-md', Kebab.columnClass];
 
-const UserKebab_: React.FC<UserKebabProps & UserKebabDispatchProps> = ({
-  user,
-  startImpersonate,
-}) => {
+const UserKebab: React.FC<UserKebabProps> = ({ user }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const impersonateAction: KebabAction = (_kind: K8sKind, obj: UserKind) => ({
     label: t('public~Impersonate User {{name}}', obj.metadata),
     callback: () => {
-      startImpersonate('User', obj.metadata.name);
+      dispatch(UIActions.startImpersonate('User', obj.metadata.name));
       navigate(window.SERVER_FLAGS.basePath);
     },
     // Must use API group authorization.k8s.io, NOT user.openshift.io
@@ -56,10 +61,6 @@ const UserKebab_: React.FC<UserKebabProps & UserKebabDispatchProps> = ({
     />
   );
 };
-
-const UserKebab = connect<{}, UserKebabDispatchProps, UserKebabProps>(null, {
-  startImpersonate: UIActions.startImpersonate,
-})(UserKebab_);
 
 const UserTableRow: React.FC<RowFunctionArgs<UserKind>> = ({ obj }) => {
   return (
@@ -202,37 +203,38 @@ const RoleBindingsTab: React.FC<RoleBindingsTabProps> = ({ obj }) => (
 const UserDetails: React.FC<UserDetailsProps> = ({ obj }) => {
   const { t } = useTranslation();
   return (
-    <div className="co-m-pane__body">
+    <PaneBody>
       <SectionHeading text={t('public~User details')} />
       <ResourceSummary resource={obj}>
-        <dt>{t('public~Full name')}</dt>
-        <dd>{obj.fullName || '-'}</dd>
-        <dt>{t('public~Identities')}</dt>
-        <dd>
-          {_.map(obj.identities, (identity: string) => (
-            <div key={identity}>{identity}</div>
-          ))}
-        </dd>
+        <DescriptionListGroup>
+          <DescriptionListTerm>{t('public~Full name')}</DescriptionListTerm>
+          <DescriptionListDescription>{obj.fullName || '-'}</DescriptionListDescription>
+        </DescriptionListGroup>
+        <DescriptionListGroup>
+          <DescriptionListTerm>{t('public~Identities')}</DescriptionListTerm>
+          <DescriptionListDescription>
+            {_.map(obj.identities, (identity: string) => (
+              <div key={identity}>{identity}</div>
+            ))}
+          </DescriptionListDescription>
+        </DescriptionListGroup>
       </ResourceSummary>
-    </div>
+    </PaneBody>
   );
-};
-
-type UserKebabDispatchProps = {
-  startImpersonate: (kind: string, name: string) => (dispatch, store) => Promise<void>;
 };
 
 type UserKebabProps = {
   user: UserKind;
 };
 
-const UserDetailsPage_: React.FC<UserKebabDispatchProps> = ({ startImpersonate, ...props }) => {
+export const UserDetailsPage: React.FC = (props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const impersonateAction: KebabAction = (_kind: K8sKind, obj: UserKind) => ({
     label: t('public~Impersonate User {{name}}', obj.metadata),
     callback: () => {
-      startImpersonate('User', obj.metadata.name);
+      dispatch(UIActions.startImpersonate('User', obj.metadata.name));
       navigate(window.SERVER_FLAGS.basePath);
     },
     // Must use API group authorization.k8s.io, NOT user.openshift.io
@@ -257,10 +259,6 @@ const UserDetailsPage_: React.FC<UserKebabDispatchProps> = ({ startImpersonate, 
     />
   );
 };
-
-export const UserDetailsPage = connect<{}, UserKebabDispatchProps>(null, {
-  startImpersonate: UIActions.startImpersonate,
-})(UserDetailsPage_);
 
 type UserPageProps = {
   autoFocus?: boolean;

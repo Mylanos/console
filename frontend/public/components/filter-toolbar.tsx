@@ -1,8 +1,6 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 import { useLocation } from 'react-router-dom-v5-compat';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useDispatch } from 'react-redux';
 import {
   Badge,
@@ -31,10 +29,8 @@ import {
   FilterValue,
   RowSearchFilter,
 } from '@console/dynamic-plugin-sdk';
-import {
-  Dropdown as DropdownInternal,
-  setOrRemoveQueryArgument,
-} from '@console/internal/components/utils';
+import { ConsoleSelect } from '@console/internal/components/utils/console-select';
+import { setOrRemoveQueryArgument } from '@console/internal/components/utils';
 import { useTranslation } from 'react-i18next';
 import AutocompleteInput from './autocomplete';
 import { storagePrefix } from './row-filter';
@@ -415,7 +411,6 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({
                       selected={selectedRowFilters}
                       maxMenuHeight="60vh"
                       isScrollable
-                      className="co-toolbar__selector"
                     >
                       <SelectList data-test="filter-dropdown-list">{dropdownItems}</SelectList>
                     </Select>
@@ -424,7 +419,7 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({
               </ToolbarItem>
             )}
             {showSearchFilters && (
-              <ToolbarItem className="co-filter-search--full-width">
+              <ToolbarItem>
                 {searchRowFilters}
                 <ToolbarFilter
                   deleteLabelGroup={() => {
@@ -448,7 +443,8 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({
                   >
                     <div className="pf-v6-c-input-group co-filter-group">
                       {showSearchFiltersDropdown && (
-                        <DropdownInternal
+                        <ConsoleSelect
+                          alwaysShowTitle
                           items={filterDropdownItems}
                           onChange={(type) => setFilterType(FilterType[type] || type)}
                           selectedKey={filterType}
@@ -457,7 +453,7 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({
                       )}
                       {filterType === FilterType.LABEL && (
                         <AutocompleteInput
-                          className="co-text-node"
+                          color="purple"
                           onSuggestionSelect={(selected) => {
                             applyLabelFilters(_.uniq([...labelSelection, selected]));
                           }}

@@ -1,11 +1,10 @@
 import * as React from 'react';
+import { DescriptionList, Grid, GridItem } from '@patternfly/react-core';
+import { css } from '@patternfly/react-styles';
 import { sortable } from '@patternfly/react-table';
-import * as classNames from 'classnames';
 import { JSONSchema7 } from 'json-schema';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useDispatch } from 'react-redux';
 import { useParams, useLocation, useNavigate } from 'react-router-dom-v5-compat';
 import { ListPageBody, K8sModel } from '@console/dynamic-plugin-sdk';
@@ -34,7 +33,6 @@ import {
   ConsoleEmptyState,
   ResourceSummary,
   SectionHeading,
-  Timestamp,
   navFactory,
   ResourceLink,
   AsyncComponent,
@@ -69,6 +67,8 @@ import {
   useActiveNamespace,
 } from '@console/shared';
 import ErrorAlert from '@console/shared/src/components/alerts/error';
+import { Timestamp } from '@console/shared/src/components/datetime/Timestamp';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import { useK8sModel } from '@console/shared/src/hooks/useK8sModel';
 import { useK8sModels } from '@console/shared/src/hooks/useK8sModels';
 import { useResourceDetailsPage } from '@console/shared/src/hooks/useResourceDetailsPage';
@@ -77,7 +77,7 @@ import { RouteParams } from '@console/shared/src/types';
 import { ClusterServiceVersionModel } from '../../models';
 import { ClusterServiceVersionKind, ProvidedAPI } from '../../types';
 import { useClusterServiceVersion } from '../../utils/useClusterServiceVersion';
-import { DescriptorDetailsItem, DescriptorDetailsItemList } from '../descriptors';
+import { DescriptorDetailsItem, DescriptorDetailsItems } from '../descriptors';
 import { DescriptorConditions } from '../descriptors/status/conditions';
 import { DescriptorType, StatusCapability, StatusDescriptor } from '../descriptors/types';
 import { isMainStatusDescriptor } from '../descriptors/utils';
@@ -91,9 +91,9 @@ const tableColumnClasses = [
   '',
   '',
   '',
-  classNames('pf-m-hidden', 'pf-m-visible-on-sm', 'pf-v6-u-w-16-on-lg'),
-  classNames('pf-m-hidden', 'pf-m-visible-on-xl'),
-  classNames('pf-m-hidden', 'pf-m-visible-on-2xl'),
+  css('pf-m-hidden', 'pf-m-visible-on-sm', 'pf-v6-u-w-16-on-lg'),
+  css('pf-m-hidden', 'pf-m-visible-on-xl'),
+  css('pf-m-hidden', 'pf-m-visible-on-2xl'),
   Kebab.columnClass,
 ];
 
@@ -168,14 +168,14 @@ const getOperandStatusText = (operand: K8sResourceKind): string => {
 
 export const OperandTableRow: React.FC<OperandTableRowProps> = ({ obj, showNamespace }) => {
   const objReference = referenceFor(obj);
-  const context = { [objReference]: obj, 'csv-actions': { resource: obj } };
+  const context = { [objReference]: obj, 'operand-actions': { resource: obj } };
   return (
     <>
       <TableData className={tableColumnClasses[0]}>
         <OperandLink obj={obj} />
       </TableData>
       <TableData
-        className={classNames(tableColumnClasses[1], 'co-break-word')}
+        className={css(tableColumnClasses[1], 'co-break-word')}
         data-test-operand-kind={obj.kind}
       >
         {obj.kind}
@@ -447,12 +447,11 @@ export const ProvidedAPIsPage = (props: ProvidedAPIsPageProps) => {
 
   return inFlight ? null : (
     <>
-      <ListPageHeader title={showTitle ? t('olm~All Instances') : undefined}>
-        {managesAllNamespaces && (
-          <div className="co-operator-details__toggle-value pf-v6-u-ml-xl-on-md">
-            <ShowOperandsInAllNamespacesRadioGroup />
-          </div>
-        )}
+      <ListPageHeader
+        title={showTitle ? t('olm~All Instances') : undefined}
+        hideFavoriteButton
+        helpText={managesAllNamespaces && <ShowOperandsInAllNamespacesRadioGroup />}
+      >
         <ListPageCreateDropdown onClick={createNavigate} items={createItems}>
           {t('olm~Create new')}
         </ListPageCreateDropdown>
@@ -515,12 +514,11 @@ const DefaultProvidedAPIPage: React.FC<DefaultProvidedAPIPageProps> = (props) =>
 
   return (
     <>
-      <ListPageHeader title={showTitle ? `${labelPlural}` : undefined}>
-        {managesAllNamespaces && (
-          <div className="co-operator-details__toggle-value pf-v6-u-ml-xl-on-md">
-            <ShowOperandsInAllNamespacesRadioGroup />
-          </div>
-        )}
+      <ListPageHeader
+        title={showTitle ? `${labelPlural}` : undefined}
+        hideFavoriteButton
+        helpText={managesAllNamespaces && <ShowOperandsInAllNamespacesRadioGroup />}
+      >
         <ListPageCreateLink to={createPath}>
           {t('public~Create {{label}}', { label })}
         </ListPageCreateLink>
@@ -587,21 +585,21 @@ export const ProvidedAPIPage = (props: ProvidedAPIPageProps) => {
 
 const PodStatuses: React.FC<PodStatusesProps> = ({ kindObj, obj, podStatusDescriptors, schema }) =>
   podStatusDescriptors?.length > 0 ? (
-    <div className="row">
+    <Grid hasGutter>
       {podStatusDescriptors.map((statusDescriptor: StatusDescriptor) => {
         return (
-          <DescriptorDetailsItem
-            className="col-sm-6"
-            key={statusDescriptor.path}
-            type={DescriptorType.status}
-            descriptor={statusDescriptor}
-            model={kindObj}
-            obj={obj}
-            schema={schema}
-          />
+          <GridItem sm={6} key={statusDescriptor.path}>
+            <DescriptorDetailsItem
+              type={DescriptorType.status}
+              descriptor={statusDescriptor}
+              model={kindObj}
+              obj={obj}
+              schema={schema}
+            />
+          </GridItem>
         );
       })}
-    </div>
+    </Grid>
   ) : null;
 
 export const OperandDetails = connectToModel(({ crd, csv, kindObj, obj }: OperandDetailsProps) => {
@@ -661,7 +659,7 @@ export const OperandDetails = connectToModel(({ crd, csv, kindObj, obj }: Operan
 
   return (
     <div className="co-operand-details co-m-pane">
-      <div className="co-m-pane__body">
+      <PaneBody>
         {errorMessage && <ErrorAlert message={errorMessage} />}
         <SectionHeading text={t('olm~{{kind}} overview', { kind: displayName || kind })} />
         <PodStatuses
@@ -671,57 +669,64 @@ export const OperandDetails = connectToModel(({ crd, csv, kindObj, obj }: Operan
           podStatusDescriptors={podStatuses}
         />
         <div className="co-operand-details__section co-operand-details__section--info">
-          <div className="row">
-            <div className="col-sm-6">
+          <Grid hasGutter>
+            <GridItem sm={6}>
               <ResourceSummary resource={obj} />
-            </div>
-            {mainStatusDescriptor && (
-              <DescriptorDetailsItem
-                key={mainStatusDescriptor.path}
-                className="col-sm-6"
-                descriptor={mainStatusDescriptor}
-                model={kindObj}
-                obj={obj}
-                schema={schema}
-                type={DescriptorType.status}
-              />
-            )}
-            {otherStatusDescriptors?.length > 0 && (
-              <DescriptorDetailsItemList
-                descriptors={otherStatusDescriptors}
-                itemClassName="col-sm-6"
-                model={kindObj}
-                obj={obj}
-                schema={schema}
-                type={DescriptorType.status}
-              />
-            )}
-          </div>
+            </GridItem>
+            {mainStatusDescriptor || otherStatusDescriptors?.length > 0 ? (
+              <GridItem sm={6}>
+                <DescriptionList>
+                  {mainStatusDescriptor && (
+                    <DescriptorDetailsItem
+                      key={mainStatusDescriptor.path}
+                      descriptor={mainStatusDescriptor}
+                      model={kindObj}
+                      obj={obj}
+                      schema={schema}
+                      type={DescriptorType.status}
+                    />
+                  )}
+                  {otherStatusDescriptors?.length > 0 && (
+                    <DescriptorDetailsItems
+                      descriptors={otherStatusDescriptors}
+                      model={kindObj}
+                      obj={obj}
+                      schema={schema}
+                      type={DescriptorType.status}
+                    />
+                  )}
+                </DescriptionList>
+              </GridItem>
+            ) : null}
+          </Grid>
         </div>
-      </div>
+      </PaneBody>
       {!_.isEmpty(specDescriptors) && (
-        <div className="co-m-pane__body">
+        <PaneBody>
           <div className="co-operand-details__section co-operand-details__section--info">
-            <div className="row">
-              <DescriptorDetailsItemList
-                descriptors={specDescriptors}
-                itemClassName="col-sm-6"
-                model={kindObj}
-                obj={obj}
-                onError={handleError}
-                schema={schema}
-                type={DescriptorType.spec}
-              />
-            </div>
+            <Grid hasGutter>
+              <GridItem sm={6}>
+                <DescriptionList>
+                  <DescriptorDetailsItems
+                    descriptors={specDescriptors}
+                    model={kindObj}
+                    obj={obj}
+                    onError={handleError}
+                    schema={schema}
+                    type={DescriptorType.spec}
+                  />
+                </DescriptionList>
+              </GridItem>
+            </Grid>
           </div>
-        </div>
+        </PaneBody>
       )}
       {Array.isArray(status?.conditions) &&
         (conditionsStatusDescriptors ?? []).every(({ path }) => path !== 'conditions') && (
-          <div className="co-m-pane__body" data-test="status.conditions">
+          <PaneBody data-test="status.conditions">
             <SectionHeading data-test="operand-conditions-heading" text={t('public~Conditions')} />
             <Conditions conditions={status.conditions} />
-          </div>
+          </PaneBody>
         )}
       {conditionsStatusDescriptors?.length > 0 &&
         conditionsStatusDescriptors.map((descriptor) => (
@@ -747,7 +752,7 @@ const DefaultOperandDetailsPage = ({ k8sModel }: DefaultOperandDetailsPageProps)
   const actionItems = React.useCallback((resourceModel: K8sKind, resource: K8sResourceKind) => {
     const context = {
       [referenceForModel(resourceModel)]: resource,
-      'csv-actions': { resource },
+      'operand-actions': { resource },
     };
     return <LazyActionMenu context={context} variant={ActionMenuVariant.DROPDOWN} />;
   }, []);

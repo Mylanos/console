@@ -1,34 +1,37 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as _ from 'lodash-es';
-import * as React from 'react';
 import { connect } from 'react-redux';
 
-import { Divider } from '@patternfly/react-core';
+import { Divider, ButtonVariant } from '@patternfly/react-core';
 import { k8sPatch } from '../../module/k8s';
 import { RoleModel, ClusterRoleModel } from '../../models';
 import { Kebab, EmptyBox, ResourceIcon } from '../utils';
-import { confirmModal } from '../modals';
+
+import { useWarningModal } from '@console/shared/src/hooks/useWarningModal';
 import { useTranslation } from 'react-i18next';
+import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 
 export const RulesList = ({ rules, name, namespace }) => {
   const { t } = useTranslation();
   return _.isEmpty(rules) ? (
     <EmptyBox label={t('public~Rules')} />
   ) : (
-    <div className="co-m-table-grid co-m-table-grid--bordered">
-      <div className="row co-m-table-grid__head">
-        <div className="col-xs-5 col-sm-4 col-md-3 col-lg-2">{t('public~Actions')}</div>
-        <div className="hidden-xs col-sm-4 col-md-3 col-lg-3">{t('public~API groups')}</div>
-        <div className="col-xs-7 col-sm-4 col-md-6 col-lg-7">{t('public~Resources')}</div>
-      </div>
-      <div className="co-m-table-grid__body">
+    <Table gridBreakPoint="">
+      <Thead>
+        <Tr>
+          <Th>{t('public~Actions')}</Th>
+          <Th visibility={['hidden', 'visibleOnSm']}>{t('public~API groups')}</Th>
+          <Th>{t('public~Resources')}</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
         {rules.map((rule, i) => (
-          <div className="row co-resource-list__item" key={i}>
+          <Tr key={i}>
             <Rule {...rule} name={name} namespace={namespace} i={i} />
-          </div>
+          </Tr>
         ))}
-      </div>
-    </div>
+      </Tbody>
+    </Table>
   );
 };
 
@@ -130,47 +133,48 @@ const Resources = connect(({ k8s }) => ({ allModels: k8s.getIn(['RESOURCES', 'mo
 
 const RuleKebab = ({ name, namespace, i }) => {
   const { t } = useTranslation();
-  const DeleteRule = () => ({
-    label: t('public~Delete rule'),
-    callback: () =>
-      confirmModal({
-        title: t('public~Delete rule'),
-        message: t('public~Are you sure you want to delete rule #{{ruleNumber}}?', {
-          ruleNumber: i,
-        }),
-        btnText: t('public~Delete rule'),
-        executeFn: () => {
-          const kind = namespace ? RoleModel : ClusterRoleModel;
-          return k8sPatch(kind, { metadata: { name, namespace } }, [
-            {
-              op: 'remove',
-              path: `/rules/${i}`,
-            },
-          ]);
+  const openDeleteRuleConfirm = useWarningModal({
+    title: t('public~Delete rule'),
+    children: t('public~Are you sure you want to delete rule #{{ruleNumber}}?', {
+      ruleNumber: i,
+    }),
+    confirmButtonLabel: t('public~Delete rule'),
+    confirmButtonVariant: ButtonVariant.danger,
+    onConfirm: () => {
+      const kind = namespace ? RoleModel : ClusterRoleModel;
+      return k8sPatch(kind, { metadata: { name, namespace } }, [
+        {
+          op: 'remove',
+          path: `/rules/${i}`,
         },
-      }),
+      ]);
+    },
+    ouiaId: 'RBACDeleteRuleConfirmation',
   });
 
   const options = [
     // EditRule,
-    DeleteRule,
+    () => ({
+      label: t('public~Delete rule'),
+      callback: () => openDeleteRuleConfirm(),
+    }),
   ].map((f) => f(name, namespace, i));
   return <Kebab options={options} />;
 };
 
 const Rule = ({ resources, nonResourceURLs, verbs, apiGroups, name, namespace, i }) => (
-  <div className="rbac-rule">
-    <div className="col-xs-5 col-sm-4 col-md-3 col-lg-2">
+  <>
+    <Td>
       <Actions verbs={verbs} />
-    </div>
-    <div className="hidden-xs col-sm-4 col-md-3 col-lg-3">
+    </Td>
+    <Td visibility={['hidden', 'visibleOnSm']}>
       <Groups apiGroups={apiGroups} />
-    </div>
-    <div className="col-xs-7 col-sm-4 col-md-6 col-lg-7">
+    </Td>
+    <Td>
       <Resources resources={resources} nonResourceURLs={nonResourceURLs} />
-    </div>
-    <div className="dropdown-kebab-pf">
+    </Td>
+    <Td className="pf-v6-c-table__action">
       <RuleKebab name={name} namespace={namespace} i={i} />
-    </div>
-  </div>
+    </Td>
+  </>
 );

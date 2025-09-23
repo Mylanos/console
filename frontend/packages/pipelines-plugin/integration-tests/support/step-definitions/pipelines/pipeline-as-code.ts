@@ -264,7 +264,7 @@ When('user clicks Last Run value of repository {string}', (repoName) => {
 
 Then('Details tab is displayed with fields Repository, Branch, Commit id and Event type', () => {
   pipelineRunDetailsPage.verifyDetailsFields();
-  cy.byLegacyTestID('resource-title').scrollIntoView();
+  cy.get('[data-test="page-heading"] h1').scrollIntoView();
 });
 
 Then(
@@ -275,7 +275,7 @@ Then(
 );
 
 Then('user hovers over the commit id', () => {
-  cy.get('.co-external-link').focus().trigger('mouseover');
+  cy.get('[data-test="pl-sha-url"]').focus().trigger('mouseover');
 });
 
 Then('user should see commit message in tooltip', () => {

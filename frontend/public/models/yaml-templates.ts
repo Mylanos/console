@@ -22,128 +22,6 @@ metadata:
 `,
   )
   .setIn(
-    [referenceForModel(k8sModels.NetworkPolicyModel), 'deny-other-namespaces'],
-    `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: deny-other-namespaces
-  namespace: target-ns
-spec:
-  podSelector:
-  ingress:
-  - from:
-    - podSelector: {}
-`,
-  )
-  .setIn(
-    [referenceForModel(k8sModels.NetworkPolicyModel), 'db-or-api-allow-app'],
-    `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: db-or-api-allow-app
-  namespace: target-ns
-spec:
-  podSelector:
-    matchLabels:
-      role: db
-  ingress:
-    - from:
-      - podSelector:
-          matchLabels:
-            app: mail
-`,
-  )
-  .setIn(
-    [referenceForModel(k8sModels.NetworkPolicyModel), 'api-allow-http-and-https'],
-    `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: api-allow-http-and-https
-  namespace: target-ns
-spec:
-  podSelector:
-    matchLabels:
-      app: api
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              role: monitoring
-      ports:
-        - protocol: TCP
-          port: 80
-        - protocol: TCP
-          port: 443
-`,
-  )
-  .setIn(
-    [referenceForModel(k8sModels.NetworkPolicyModel), 'default-deny-all'],
-    `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-all
-  namespace: target-ns
-spec:
-  podSelector:
-`,
-  )
-  .setIn(
-    [referenceForModel(k8sModels.NetworkPolicyModel), 'web-allow-external'],
-    `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: web-allow-external
-  namespace: target-ns
-spec:
-  podSelector:
-    matchLabels:
-      app: web
-  ingress:
-  - {}
-`,
-  )
-  .setIn(
-    [referenceForModel(k8sModels.NetworkPolicyModel), 'web-db-allow-all-ns'],
-    `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: web-db-allow-all-ns
-  namespace: target-ns
-spec:
-  podSelector:
-    matchLabels:
-      role: web-db
-  ingress:
-    - from:
-      - namespaceSelector: {}
-`,
-  )
-  .setIn(
-    [referenceForModel(k8sModels.NetworkPolicyModel), 'web-allow-production'],
-    `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: web-allow-production
-  namespace: target-ns
-spec:
-  podSelector:
-    matchLabels:
-      app: web
-  ingress:
-    - from:
-      - namespaceSelector:
-          matchLabels:
-            env: production
-`,
-  )
-  .setIn(
     [referenceForModel(k8sModels.BuildConfigModel), 'default'],
     `
 apiVersion: build.openshift.io/v1
@@ -897,9 +775,8 @@ spec:
       labels:
         foo: bar
     spec:
-      providerSpec: {}
-      versions:
-        kubelet: ""
+      providerSpec:
+        value: {}
 `,
   )
   .setIn(
@@ -1078,7 +955,7 @@ spec:
     href: 'https://www.example.com'
     text: Optional link text
   color: '#fff'
-  backgroundColor: '#0088ce'
+  backgroundColor: '#0066cc'
 `,
   )
   .setIn(
@@ -1226,10 +1103,11 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: ''
+  name: example
 spec:
   selector:
-    {}
+    matchLabels:
+      app: hello-openshift
 `,
   )
   .setIn(
@@ -1244,7 +1122,7 @@ spec:
  maxUnavailable: 0
  selector:
     matchLabels:
-      app: hello-openShift
+      app: hello-openshift
 `,
   )
   .setIn(
@@ -1259,7 +1137,7 @@ spec:
  minAvailable: "25%"
  selector:
     matchLabels:
-      app: hello-openShift
+      app: hello-openshift
 `,
   );
 

@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { QuickStartContextValues } from '@patternfly/quickstarts';
+import { CodeEditorProps as PfCodeEditorProps } from '@patternfly/react-code-editor';
 import { ButtonProps } from '@patternfly/react-core';
 import { ICell, OnSelect, SortByDirection, TableGridBreakpoint } from '@patternfly/react-table';
 import { LocationDescriptor } from 'history';
-import MonacoEditor from 'react-monaco-editor/lib/editor';
+import type * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import {
   ExtensionK8sGroupKindModel,
   K8sModel,
@@ -40,7 +41,7 @@ export type ObjectReference = {
 export type ObjectMetadata = {
   annotations?: { [key: string]: string };
   clusterName?: string;
-  creationTimestamp?: string;
+  creationTimestamp?: string | undefined;
   deletionGracePeriodSeconds?: number;
   deletionTimestamp?: string;
   finalizers?: string[];
@@ -253,6 +254,12 @@ export type UseResolvedExtensions = <E extends Extension>(
   ...typeGuards: ExtensionTypeGuard<E>[]
 ) => [ResolvedExtension<E>[], boolean, any[]];
 
+export type GetSegmentAnalytics = () => {
+  // TODO: use proper Segment Analytics API type
+  analytics: Record<string, (...args: any) => any>;
+  analyticsEnabled: boolean;
+};
+
 export type ConsoleFetch = (
   url: string,
   options?: RequestInit,
@@ -281,6 +288,7 @@ export type HorizontalNavProps = {
   resource?: K8sResourceCommon;
   pages: NavPage[];
   customData?: object;
+  contextId?: string;
 };
 
 export type TableColumn<D> = ICell & {
@@ -345,9 +353,22 @@ export type UseActiveColumns = <D = any>({
 }) => [TableColumn<D>[], boolean];
 
 export type ListPageHeaderProps = {
-  title: string;
-  helpText?: React.ReactNode;
+  /** A badge that is displayed next to the title of the heading */
   badge?: React.ReactNode;
+  /** A primary action that is always rendered. */
+  children?: React.ReactNode;
+  /** An alert placed below the heading in the same PageSection. */
+  helpAlert?: React.ReactNode;
+  /** A subtitle placed below the title. */
+  helpText?: React.ReactNode;
+  /**
+   * The "Add to favourites" button is shown by default while in the admin perspective.
+   * This prop allows you to hide the button. It should be hidden when `ListPageHeader`
+   * is not the primary page header to avoid having multiple favourites buttons.
+   */
+  hideFavoriteButton?: boolean;
+  /** The heading title. If no title is set, only the `children`, `badge`, and `helpAlert` props will be rendered */
+  title: string;
 };
 
 export type CreateWithPermissionsProps = {
@@ -634,24 +655,35 @@ export type UserInfo = {
   extra?: object;
 };
 
-export type CodeEditorProps = {
-  value?: string;
-  language?: string;
-  options?: object;
-  minHeight?: string | number;
+export type CodeEditorToolbarProps = {
+  /** Whether to show a toolbar with shortcuts on top of the editor. */
   showShortcuts?: boolean;
-  showMiniMap?: boolean;
+  /** Toolbar links section on the left side of the editor */
   toolbarLinks?: React.ReactNodeArray;
-  onChange?: (newValue, event) => void;
-  onSave?: () => void;
 };
 
+// Omit the ref as we have our own ref type, which is completely different
+export type BasicCodeEditorProps = Partial<Omit<PfCodeEditorProps, 'ref'>>;
+
+export type CodeEditorProps = Omit<BasicCodeEditorProps, 'code' | 'shortcutsPopoverProps'> &
+  CodeEditorToolbarProps & {
+    /** Additional props to override the default popover properties */
+    shortcutsPopoverProps?: Partial<PfCodeEditorProps['shortcutsPopoverProps']>;
+    /** Code displayed in code editor. */
+    value?: string;
+    /** Minimum editor height in valid CSS height values. */
+    minHeight?: CSSStyleDeclaration['minHeight'];
+    /** Callback that is run when CTRL / CMD + S is pressed */
+    onSave?: () => void;
+  };
+
 export type CodeEditorRef = {
-  editor?: MonacoEditor['editor'];
+  editor: monaco.editor.IStandaloneCodeEditor;
+  monaco: typeof monaco;
 };
 
 export type ResourceYAMLEditorProps = {
-  initialResource: string | { [key: string]: any };
+  initialResource: K8sResourceKind;
   header?: string;
   onSave?: (content: string) => void;
   readOnly?: boolean;
@@ -665,7 +697,7 @@ export type ResourceEventStreamProps = {
 };
 
 export type TimestampProps = {
-  timestamp: string | number | Date;
+  timestamp: string | undefined;
   simple?: boolean;
   omitSuffix?: boolean;
   className?: string;
@@ -779,6 +811,7 @@ export type NodeKind = {
   spec: {
     taints?: Taint[];
     unschedulable?: boolean;
+    providerID?: string;
   };
   status?: {
     capacity?: {
@@ -890,3 +923,8 @@ export interface PodRCData {
   isRollingOut: boolean;
   pods: ExtPodKind[];
 }
+
+export type DocumentTitleProps = {
+  /** The title to display */
+  children: string;
+};

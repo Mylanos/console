@@ -3,21 +3,11 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Radio, Content, ContentVariants } from '@patternfly/react-core';
 import { useK8sWatchResource } from '@console/internal/components/utils/k8s-watch-hook';
-import {
-  documentationURLs,
-  ExternalLink,
-  getDocumentationURL,
-} from '@console/internal/components/utils';
 import { DropdownWithSwitch } from '@console/shared/src/components/dropdown';
 
 import { ClusterVersionModel, MachineConfigPoolModel, NodeModel } from '../../models';
-import {
-  FieldLevelHelp,
-  HandlePromiseProps,
-  LinkifyExternal,
-  isManaged,
-  withHandlePromise,
-} from '../utils';
+import { FieldLevelHelp, LinkifyExternal } from '../utils';
+import { usePromiseHandler } from '@console/shared/src/hooks/promise-handler';
 import {
   ClusterVersionKind,
   getConditionUpgradeableFalse,
@@ -53,8 +43,9 @@ enum upgradeTypes {
   Partial = 'Partial',
 }
 
-const ClusterUpdateModal = withHandlePromise((props: ClusterUpdateModalProps) => {
-  const { cancel, close, cv, errorMessage, handlePromise, inProgress } = props;
+const ClusterUpdateModal = (props: ClusterUpdateModalProps) => {
+  const { cancel, close, cv } = props;
+  const [handlePromise, inProgress, errorMessage] = usePromiseHandler();
   const clusterUpgradeableFalse = !!getConditionUpgradeableFalse(cv);
   const availableSortedUpdates = getSortedAvailableUpdates(cv);
   const notRecommendedSortedUpdates = getSortedNotRecommendedUpdates(cv);
@@ -110,51 +101,65 @@ const ClusterUpdateModal = withHandlePromise((props: ClusterUpdateModalProps) =>
   const desiredNotRecommendedUpdateConditions = getNotRecommendedUpdateCondition(
     desiredNotRecommendedUpdate?.conditions,
   );
-  const submit: React.FormEventHandler<HTMLFormElement> = (e) => {
-    e.preventDefault();
-    if (!desiredRecommendedUpdate && !desiredNotRecommendedUpdate) {
-      setError(
-        t(
-          'public~Version {{desiredVersion}} not found among the supported updates. Select another version.',
-          { desiredVersion },
-        ),
-      );
-      return;
-    }
+  const submit: React.FormEventHandler<HTMLFormElement> = React.useCallback(
+    (e) => {
+      e.preventDefault();
+      if (!desiredRecommendedUpdate && !desiredNotRecommendedUpdate) {
+        setError(
+          t(
+            'public~Version {{desiredVersion}} not found among the supported updates. Select another version.',
+            { desiredVersion },
+          ),
+        );
+        return;
+      }
 
-    // Clear any previous error message.
-    setError('');
-    let MCPsToPausePromises;
-    let MCPsToResumePromises;
-    if (upgradeType === upgradeTypes.Full) {
-      MCPsToPausePromises = [];
-      MCPsToResumePromises = getMCPsToPausePromises(pausedMCPs, false);
-    } else {
-      const MCPsToPause = pauseableMCPs.filter((mcp) =>
-        machineConfigPoolsToPause.find((m) => m === mcp.metadata.name),
-      );
-      const MCPsToResume = pauseableMCPs.filter((mcp) => !MCPsToPause.includes(mcp));
-      MCPsToPausePromises = getMCPsToPausePromises(MCPsToPause, true);
-      MCPsToResumePromises = getMCPsToPausePromises(MCPsToResume, false);
-    }
-    const patch = [
-      {
-        op: 'add',
-        path: '/spec/desiredUpdate',
-        value: desiredNotRecommendedUpdate
-          ? desiredNotRecommendedUpdate.release
-          : desiredRecommendedUpdate,
-      },
-    ];
-    return handlePromise(
-      Promise.all([
-        k8sPatch(ClusterVersionModel, cv, patch),
-        ...MCPsToResumePromises,
-        ...MCPsToPausePromises,
-      ]),
+      // Clear any previous error message.
+      setError('');
+      let MCPsToPausePromises;
+      let MCPsToResumePromises;
+      if (upgradeType === upgradeTypes.Full) {
+        MCPsToPausePromises = [];
+        MCPsToResumePromises = getMCPsToPausePromises(pausedMCPs, false);
+      } else {
+        const MCPsToPause = pauseableMCPs.filter((mcp) =>
+          machineConfigPoolsToPause.find((m) => m === mcp.metadata.name),
+        );
+        const MCPsToResume = pauseableMCPs.filter((mcp) => !MCPsToPause.includes(mcp));
+        MCPsToPausePromises = getMCPsToPausePromises(MCPsToPause, true);
+        MCPsToResumePromises = getMCPsToPausePromises(MCPsToResume, false);
+      }
+      const patch = [
+        {
+          op: 'add',
+          path: '/spec/desiredUpdate',
+          value: desiredNotRecommendedUpdate
+            ? desiredNotRecommendedUpdate.release
+            : desiredRecommendedUpdate,
+        },
+      ];
+      handlePromise(
+        Promise.all([
+          k8sPatch(ClusterVersionModel, cv, patch),
+          ...MCPsToResumePromises,
+          ...MCPsToPausePromises,
+        ]),
+      ).then(() => close());
+    },
+    [
+      desiredRecommendedUpdate,
+      desiredNotRecommendedUpdate,
+      t,
+      desiredVersion,
+      upgradeType,
+      pausedMCPs,
+      pauseableMCPs,
+      machineConfigPoolsToPause,
+      handlePromise,
+      cv,
       close,
-    );
-  };
+    ],
+  );
   const dropdownItem = (version) => {
     const isDisabled = clusterUpgradeableFalse && isMinorVersionNewer(currentVersion, version);
     return {
@@ -189,7 +194,6 @@ const ClusterUpdateModal = withHandlePromise((props: ClusterUpdateModalProps) =>
       label: t('public~Have known issues'),
     });
   }
-  const helpURL = getDocumentationURL(documentationURLs.updateUsingCustomMachineConfigPools);
 
   return (
     <form onSubmit={submit} name="form" className="modal-content" data-test="update-cluster-modal">
@@ -219,7 +223,6 @@ const ClusterUpdateModal = withHandlePromise((props: ClusterUpdateModalProps) =>
                 </FieldLevelHelp>
               </>
             }
-            switchLabelClassName="co-switch-label"
             switchLabelIsReversed
             switchOnChange={(val) => setIncludeNotRecommended(val)}
             toggleLabel={desiredVersion}
@@ -255,7 +258,7 @@ const ClusterUpdateModal = withHandlePromise((props: ClusterUpdateModalProps) =>
             {t('public~Update options')}
             <FieldLevelHelp>
               {t(
-                "public~Full cluster update allows you to update all your Nodes, but takes longer. Control plane only update allows you to pause worker and custom pool Nodes to accommodate your maintenance schedule, but you'll need to resume the non-control plane Node updates within 60 days to avoid failure.",
+                'public~Full cluster update allows you to update all your Nodes, but takes longer. Control plane only update allows you to pause worker and custom pool Nodes to accommodate your maintenance schedule.',
               )}
             </FieldLevelHelp>
           </label>
@@ -307,24 +310,11 @@ const ClusterUpdateModal = withHandlePromise((props: ClusterUpdateModalProps) =>
             className="pf-v6-u-mb-md"
             body={
               upgradeType === upgradeTypes.Partial && (
-                <>
-                  <MachineConfigPoolsSelector
-                    machineConfigPools={pauseableMCPs}
-                    selected={machineConfigPoolsToPause}
-                    onChange={handleMCPSelectionChange}
-                  />
-                  <Alert
-                    variant="warning"
-                    isInline
-                    isPlain
-                    title={t('public~You must resume updates within 60 days to avoid failures.')}
-                    className="pf-v6-u-mb-md"
-                  >
-                    {!isManaged() && (
-                      <ExternalLink href={helpURL}>{t('public~Learn more')}</ExternalLink>
-                    )}
-                  </Alert>
-                </>
+                <MachineConfigPoolsSelector
+                  machineConfigPools={pauseableMCPs}
+                  selected={machineConfigPoolsToPause}
+                  onChange={handleMCPSelectionChange}
+                />
               )
             }
             data-test="update-cluster-modal-partial-update-radio"
@@ -344,11 +334,10 @@ const ClusterUpdateModal = withHandlePromise((props: ClusterUpdateModalProps) =>
       />
     </form>
   );
-});
+};
 
 export const clusterUpdateModal = createModalLauncher(ClusterUpdateModal);
 
 type ClusterUpdateModalProps = {
   cv: ClusterVersionKind;
-} & ModalComponentProps &
-  HandlePromiseProps;
+} & ModalComponentProps;

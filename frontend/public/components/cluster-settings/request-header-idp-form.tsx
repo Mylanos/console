@@ -1,29 +1,31 @@
-import * as React from 'react';
-import { Helmet } from 'react-helmet';
+import { useState } from 'react';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom-v5-compat';
 import { ActionGroup, Button, Title } from '@patternfly/react-core';
 
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import { ConfigMapModel } from '../../models';
 import { IdentityProvider, k8sCreate, OAuthKind, K8sResourceKind } from '../../module/k8s';
-import { ButtonBar, ListInput, PageHeading } from '../utils';
+import { ButtonBar, ListInput } from '../utils';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
 import { addIDP, getOAuthResource as getOAuth, redirectToOAuthPage, mockNames } from './';
 import { IDPNameInput } from './idp-name-input';
 import { IDPCAFileInput } from './idp-cafile-input';
 
 export const AddRequestHeaderPage = () => {
   const navigate = useNavigate();
-  const [inProgress, setInProgress] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState('');
-  const [name, setName] = React.useState('request-header');
-  const [challengeURL, setChallengeURL] = React.useState('');
-  const [loginURL, setLoginURL] = React.useState('');
-  const [clientCommonNames, setClientCommonNames] = React.useState([]);
-  const [headers, setHeaders] = React.useState([]);
-  const [preferredUsernameHeaders, setPreferredUsernameHeaders] = React.useState([]);
-  const [nameHeaders, setNameHeaders] = React.useState([]);
-  const [emailHeaders, setEmailHeaders] = React.useState([]);
-  const [caFileContent, setCaFileContent] = React.useState('');
+  const [inProgress, setInProgress] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [name, setName] = useState('request-header');
+  const [challengeURL, setChallengeURL] = useState('');
+  const [loginURL, setLoginURL] = useState('');
+  const [clientCommonNames, setClientCommonNames] = useState([]);
+  const [headers, setHeaders] = useState([]);
+  const [preferredUsernameHeaders, setPreferredUsernameHeaders] = useState([]);
+  const [nameHeaders, setNameHeaders] = useState([]);
+  const [emailHeaders, setEmailHeaders] = useState([]);
+  const [caFileContent, setCaFileContent] = useState('');
 
   const { t } = useTranslation();
 
@@ -125,17 +127,15 @@ export const AddRequestHeaderPage = () => {
 
   return (
     <div className="co-m-pane__form">
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
+      <DocumentTitle>{title}</DocumentTitle>
       <PageHeading
         title={title}
         helpText={t(
           'public~Use request header to identify users from request header values. It is typically used in combination with an authenticating proxy, which sets the request header value.',
         )}
       />
-      <div className="co-m-pane__body">
-        <form onSubmit={submit} name="form" className="co-m-pane__body-group">
+      <PaneBody>
+        <form onSubmit={submit} name="form">
           <IDPNameInput value={name} onChange={(e) => setName(e.currentTarget.value)} />
           <div className="co-form-section__separator" />
           <Title headingLevel="h3" className="pf-v6-u-mb-sm co-required">
@@ -143,12 +143,11 @@ export const AddRequestHeaderPage = () => {
           </Title>
           <p className="co-m-pane__explanation">{t('public~At least one URL must be provided.')}</p>
           <div className="form-group">
-            <label className="control-label" htmlFor="challenge-url">
-              {t('public~Challenge URL')}
-            </label>
+            <label htmlFor="challenge-url">{t('public~Challenge URL')}</label>
             <span className="pf-v6-c-form-control">
               <input
                 type="url"
+                aria-label={t('public~Challenge URL')}
                 onChange={(e) => setChallengeURL(e.currentTarget.value)}
                 value={challengeURL}
                 id="challenge-url"
@@ -162,12 +161,11 @@ export const AddRequestHeaderPage = () => {
             </div>
           </div>
           <div className="form-group">
-            <label className="control-label" htmlFor="login-url">
-              {t('public~Login URL')}
-            </label>
+            <label htmlFor="login-url">{t('public~Login URL')}</label>
             <span className="pf-v6-c-form-control">
               <input
                 type="url"
+                aria-label={t('public~Login URL')}
                 onChange={(e) => setLoginURL(e.currentTarget.value)}
                 value={loginURL}
                 id="login-url"
@@ -185,33 +183,39 @@ export const AddRequestHeaderPage = () => {
             {t('public~More options')}
           </Title>
           <IDPCAFileInput
+            id="ca-file-input"
             value={caFileContent}
             onChange={(c: string) => setCaFileContent(c)}
             isRequired
           />
           <ListInput
             label={t('public~Client common names')}
+            id="request-header-client-common-names"
             onChange={(c: string[]) => setClientCommonNames(c)}
             helpText={t('public~The set of common names to require a match from.')}
           />
           <ListInput
             label={t('public~Headers')}
+            id="request-header-headers"
             onChange={(c: string[]) => setHeaders(c)}
             helpText={t('public~The set of headers to check for identity information.')}
             required
           />
           <ListInput
             label={t('public~Preferred username headers')}
+            id="request-header-preferred-username-headers"
             onChange={(c: string[]) => setPreferredUsernameHeaders(c)}
             helpText={t('public~The set of headers to check for the preferred username.')}
           />
           <ListInput
             label={t('public~Name headers')}
+            id="request-header-name-headers"
             onChange={(c: string[]) => setNameHeaders(c)}
             helpText={t('public~The set of headers to check for the display name.')}
           />
           <ListInput
             label={t('public~Email headers')}
+            id="request-header-email-headers"
             onChange={(c: string[]) => setEmailHeaders(c)}
             helpText={t('public~The set of headers to check for the email address.')}
           />
@@ -226,7 +230,7 @@ export const AddRequestHeaderPage = () => {
             </ActionGroup>
           </ButtonBar>
         </form>
-      </div>
+      </PaneBody>
     </div>
   );
 };

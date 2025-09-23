@@ -1,22 +1,22 @@
 import * as React from 'react';
+import { css } from '@patternfly/react-styles';
 import {
+  DefaultGroup,
   Node,
-  observer,
+  WithContextMenuProps,
   WithDndDropProps,
   WithDragNodeProps,
   WithSelectionProps,
-  WithContextMenuProps,
-  useHover,
+  observer,
   useCombineRefs,
+  useHover,
 } from '@patternfly/react-topology';
-import classNames from 'classnames';
 import { useSearchFilter } from '../../../../filters';
 import { useShowLabel } from '../../../../filters/useShowLabel';
 import { ApplicationModel } from '../../../../models';
 import { SHOW_GROUPING_HINT_EVENT } from '../../../../topology-types';
 import { getKindStringAndAbbreviation } from '../nodes/nodeUtils';
 import RegroupHint from '../RegroupHint';
-import ApplicationGroupExpanded from './ApplicationGroupExpanded';
 import GroupNode from './GroupNode';
 
 import './Application.scss';
@@ -56,11 +56,11 @@ const Application: React.FC<ApplicationProps> = ({
   }, [dropTarget, canDrop, element, dragRegroupable]);
   const showLabel = useShowLabel(hover);
   const { kindAbbr, kindStr, kindColor } = getKindStringAndAbbreviation(ApplicationModel.kind);
-  const badgeClassName = classNames('odc-resource-icon', {
+  const badgeClassName = css('odc-resource-icon', {
     [`odc-resource-icon-${kindStr.toLowerCase()}`]: !kindColor,
   });
 
-  const groupClasses = classNames('odc-application-group', {
+  const groupClasses = css('odc-application-group', {
     'is-filtered': filtered,
   });
 
@@ -80,9 +80,8 @@ const Application: React.FC<ApplicationProps> = ({
     );
   }
 
-  // Use local version of DefaultGroupExpanded until we have a fix for https://github.com/patternfly/patternfly-react/issues/7300
   return (
-    <ApplicationGroupExpanded
+    <DefaultGroup
       className={groupClasses}
       showLabel={showLabel}
       element={element}

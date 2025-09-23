@@ -1,9 +1,11 @@
+import { guidedTour } from '@console/cypress-integration-tests/views/guided-tour';
 import { checkErrors, testName } from '../../../integration-tests-cypress/support';
 import { modal } from '../../../integration-tests-cypress/views/modal';
 
 describe('Create namespace from install operators', () => {
   before(() => {
     cy.login();
+    guidedTour.close();
     cy.createProjectWithCLI(testName);
   });
 
@@ -18,14 +20,15 @@ describe('Create namespace from install operators', () => {
   const nsName = `${testName}-ns`;
 
   it('creates namespace from operator install page', () => {
-    const operatorSelector = '3scale-operator-redhat-operators-openshift-marketplace';
+    const operatorSelector = 'operator-Red Hat Integration - 3scale';
     const operatorName = 'Red Hat Integration - 3scale';
     cy.log('test namespace creation from dropdown');
-    cy.visit(`/operatorhub/ns/${testName}`);
-    cy.byTestID('search-operatorhub').type(operatorName);
+    cy.visit(`/catalog/ns/${testName}`);
+    cy.byTestID('tab operator').click();
+    cy.byTestID('search-catalog').type(operatorName);
     cy.url().should('include', 'keyword');
     cy.byTestID(operatorSelector).click();
-    cy.byLegacyTestID('operator-install-btn').click({ force: true });
+    cy.byTestID('catalog-details-modal-cta').click({ force: true });
 
     // 3scale 2.11 supports only installation mode 'A specific namespace',
     // so it was automatically selected.

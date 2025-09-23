@@ -1,45 +1,50 @@
-import * as React from 'react';
+import { forwardRef } from 'react';
 import { Flex, FlexItem, SearchInput } from '@patternfly/react-core';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { Dropdown } from '@console/internal/components/utils';
+import { ConsoleSelect } from '@console/internal/components/utils/console-select';
 import { useDebounceCallback } from '@console/shared';
 import { NO_GROUPING } from '../utils/category-utils';
-import { CatalogSortOrder, CatalogStringMap } from '../utils/types';
+import { /* CatalogSortOrder, */ CatalogStringMap } from '../utils/types';
+import CatalogPageHeader from './CatalogPageHeader';
+import CatalogPageHeading from './CatalogPageHeading';
+import CatalogPageNumItems from './CatalogPageNumItems';
+import CatalogPageToolbar from './CatalogPageToolbar';
 
 type CatalogToolbarProps = {
   title: string;
   totalItems: number;
   searchKeyword: string;
-  sortOrder: CatalogSortOrder;
+  // sortOrder: CatalogSortOrder;
   groupings: CatalogStringMap;
   activeGrouping: string;
   onGroupingChange: (grouping: string) => void;
   onSearchKeywordChange: (searchKeyword: string) => void;
-  onSortOrderChange: (sortOrder: CatalogSortOrder) => void;
+  // onSortOrderChange: (sortOrder: CatalogSortOrder) => void;
 };
 
-const CatalogToolbar = React.forwardRef<HTMLInputElement, CatalogToolbarProps>(
+const CatalogToolbar = forwardRef<HTMLInputElement, CatalogToolbarProps>(
   (
     {
       title,
       totalItems,
       searchKeyword,
-      sortOrder,
+      // sortOrder,
       groupings,
       activeGrouping,
       onGroupingChange,
       onSearchKeywordChange,
-      onSortOrderChange,
+      // onSortOrderChange,
     },
     inputRef,
   ) => {
     const { t } = useTranslation();
 
-    const catalogSortItems = {
-      [CatalogSortOrder.ASC]: t('console-shared~A-Z'),
-      [CatalogSortOrder.DESC]: t('console-shared~Z-A'),
-    };
+    // TODO: Add sort order back in with a new sort by "Relevance" selection, that is the default sort order
+    // const catalogSortItems = {
+    //   [CatalogSortOrder.ASC]: t('console-shared~A-Z'),
+    //   [CatalogSortOrder.DESC]: t('console-shared~Z-A'),
+    // };
 
     const showGrouping = !_.isEmpty(groupings);
 
@@ -51,9 +56,9 @@ const CatalogToolbar = React.forwardRef<HTMLInputElement, CatalogToolbarProps>(
     const debouncedOnSearchKeywordChange = useDebounceCallback(onSearchKeywordChange);
 
     return (
-      <div className="co-catalog-page__header">
-        <div className="co-catalog-page__heading text-capitalize">{title}</div>
-        <div className="co-catalog-page__filter">
+      <CatalogPageHeader>
+        <CatalogPageHeading>{title}</CatalogPageHeading>
+        <CatalogPageToolbar>
           <Flex>
             <FlexItem>
               <SearchInput
@@ -67,32 +72,33 @@ const CatalogToolbar = React.forwardRef<HTMLInputElement, CatalogToolbarProps>(
                 aria-label={t('console-shared~Filter by keyword...')}
               />
             </FlexItem>
-            <FlexItem>
-              <Dropdown
+            {/* <FlexItem>
+              <ConsoleSelect
                 className="co-catalog-page__sort"
                 items={catalogSortItems}
                 title={catalogSortItems[sortOrder]}
+                alwaysShowTitle
                 onChange={onSortOrderChange}
               />
-            </FlexItem>
+            </FlexItem> */}
             {showGrouping && (
               <FlexItem>
-                <Dropdown
-                  className="co-catalog-page__btn-group__group-by"
+                <ConsoleSelect
                   menuClassName="dropdown-menu--text-wrap"
                   items={catalogGroupItems}
                   onChange={onGroupingChange}
                   titlePrefix={t('console-shared~Group by')}
                   title={catalogGroupItems[activeGrouping]}
+                  alwaysShowTitle
                 />
               </FlexItem>
             )}
           </Flex>
-          <div className="co-catalog-page__num-items">
+          <CatalogPageNumItems>
             {t('console-shared~{{totalItems}} items', { totalItems })}
-          </div>
-        </div>
-      </div>
+          </CatalogPageNumItems>
+        </CatalogPageToolbar>
+      </CatalogPageHeader>
     );
   },
 );

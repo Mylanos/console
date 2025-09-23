@@ -2,30 +2,41 @@
 import * as React from 'react';
 import * as _ from 'lodash-es';
 import * as fuzzy from 'fuzzysearch';
-import classNames from 'classnames';
-import { Link, useLocation, useNavigate } from 'react-router-dom-v5-compat';
+import { NavBar } from '@console/internal/components/utils';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
+import { Link, useNavigate } from 'react-router-dom-v5-compat';
 import { sortable } from '@patternfly/react-table';
 import {
   Alert,
   Button,
+  DescriptionList,
+  DescriptionListDescription,
+  DescriptionListGroup,
+  DescriptionListTerm,
   EmptyState,
   EmptyStateBody,
   EmptyStateVariant,
   Label as PfLabel,
   LabelGroup as PfLabelGroup,
-  Breadcrumb,
-  BreadcrumbItem,
+  Toolbar,
+  ToolbarContent,
+  ToolbarItem,
+  Grid,
+  GridItem,
+  ButtonVariant,
 } from '@patternfly/react-core';
 import { PencilAltIcon } from '@patternfly/react-icons/dist/esm/icons/pencil-alt-icon';
-import { Helmet } from 'react-helmet';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import { useTranslation } from 'react-i18next';
 
-import PrimaryHeading from '@console/shared/src/components/heading/PrimaryHeading';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import { breadcrumbsForGlobalConfig } from '../../cluster-settings/global-config';
 
 import { K8sResourceKind } from '../../../module/k8s';
 import { Table, TableData, TextFilter, RowFunctionArgs } from '../../factory';
-import { confirmModal, createAlertRoutingModal } from '../../modals';
+import { createAlertRoutingModal } from '../../modals';
+
+import { useWarningModal } from '@console/shared/src/hooks/useWarningModal';
 import { Firehose, ConsoleEmptyState, Kebab, SectionHeading, StatusBox } from '../../utils';
 import {
   getAlertmanagerConfig,
@@ -50,10 +61,9 @@ const AlertRouting = ({ secret, config }: AlertRoutingProps) => {
   const groupBy = _.get(config, ['route', 'group_by'], []);
   const { t } = useTranslation();
   return (
-    <div className="co-m-pane__body">
+    <PaneBody>
       <SectionHeading text={t('public~Alert routing')}>
         <Button
-          className="co-alert-manager-config__edit-alert-routing-btn"
           onClick={() => createAlertRoutingModal({ config, secret })}
           variant="secondary"
           data-test="edit-alert-routing-btn"
@@ -61,31 +71,41 @@ const AlertRouting = ({ secret, config }: AlertRoutingProps) => {
           {t('public~Edit')}
         </Button>
       </SectionHeading>
-      <div className="row">
-        <div className="col-sm-6">
-          <dl className="co-m-pane__details">
-            <dt>{t('public~Group by')}</dt>
-            <dd data-test-id="group_by_value">
-              {_.isEmpty(groupBy) ? '-' : _.join(groupBy, ', ')}
-            </dd>
-            <dt>{t('public~Group wait')}</dt>
-            <dd data-test-id="group_wait_value">{_.get(config, ['route', 'group_wait'], '-')}</dd>
-          </dl>
-        </div>
-        <div className="col-sm-6">
-          <dl className="co-m-pane__details">
-            <dt>{t('public~Group interval')}</dt>
-            <dd data-test-id="group_interval_value">
-              {_.get(config, ['route', 'group_interval'], '-')}
-            </dd>
-            <dt>{t('public~Repeat interval')}</dt>
-            <dd data-test-id="repeat_interval_value">
-              {_.get(config, ['route', 'repeat_interval'], '-')}
-            </dd>
-          </dl>
-        </div>
-      </div>
-    </div>
+      <Grid hasGutter>
+        <GridItem sm={6}>
+          <DescriptionList>
+            <DescriptionListGroup>
+              <DescriptionListTerm>{t('public~Group by')}</DescriptionListTerm>
+              <DescriptionListDescription data-test="group_by_value">
+                {_.isEmpty(groupBy) ? '-' : _.join(groupBy, ', ')}
+              </DescriptionListDescription>
+            </DescriptionListGroup>
+            <DescriptionListGroup>
+              <DescriptionListTerm>{t('public~Group wait')}</DescriptionListTerm>
+              <DescriptionListDescription data-test="group_wait_value">
+                {_.get(config, ['route', 'group_wait'], '-')}
+              </DescriptionListDescription>
+            </DescriptionListGroup>
+          </DescriptionList>
+        </GridItem>
+        <GridItem sm={6}>
+          <DescriptionList>
+            <DescriptionListGroup>
+              <DescriptionListTerm>{t('public~Group interval')}</DescriptionListTerm>
+              <DescriptionListDescription data-test="group_interval_value">
+                {_.get(config, ['route', 'group_interval'], '-')}
+              </DescriptionListDescription>
+            </DescriptionListGroup>
+            <DescriptionListGroup>
+              <DescriptionListTerm>{t('public~Repeat interval')}</DescriptionListTerm>
+              <DescriptionListDescription data-test="repeat_interval_value">
+                {_.get(config, ['route', 'repeat_interval'], '-')}
+              </DescriptionListDescription>
+            </DescriptionListGroup>
+          </DescriptionList>
+        </GridItem>
+      </Grid>
+    </PaneBody>
   );
 };
 
@@ -176,7 +196,7 @@ const hasSimpleReceiver = (
     return true;
   } else if (receiverIntegrationTypes.length === 1) {
     const receiverConfig = receiverIntegrationTypes[0]; // ex: 'pagerduty_configs'
-    const numConfigs = _.get(receiver, receiverConfig).length; // 'pagerduty_configs' is array and may have multiple sets of properties
+    const numConfigs = _.get(receiver, receiverConfig)?.length; // 'pagerduty_configs' is array and may have multiple sets of properties
     return _.hasIn(receiverTypes, receiverConfig) && numConfigs <= 1; // known receiver type and a single set of props
   }
   return false;
@@ -234,7 +254,7 @@ const deleteReceiver = (
     return receivers;
   });
   return patchAlertmanagerConfig(secret, config).then(() => {
-    navigate('/monitoring/alertmanagerconfig');
+    navigate('/settings/cluster/alertmanagerconfig');
   });
 };
 
@@ -270,13 +290,24 @@ const ReceiverTableRow: React.FC<RowFunctionArgs<
   // Receivers can be deleted if it has a simple route and not the default receiver
   const canDelete = !isDefaultReceiver && receiverHasSimpleRoute;
 
+  const openDeleteReceiverConfirm = useWarningModal({
+    title: t('public~Delete Receiver'),
+    children: t('public~Are you sure you want to delete receiver {{receiverName}}?', {
+      receiverName: receiver?.name,
+    }),
+    confirmButtonLabel: t('public~Delete Receiver'),
+    confirmButtonVariant: ButtonVariant.danger,
+    onConfirm: () => deleteReceiver(secret, config, receiver.name, navigate),
+    ouiaId: 'AlertmanagerDeleteReceiverConfirmation',
+  });
+
   const receiverMenuItems = (receiverName: string) => [
     {
       label: t('public~Edit Receiver'),
       callback: () => {
         const targetUrl = canUseEditForm
-          ? `/monitoring/alertmanagerconfig/receivers/${receiverName}/edit`
-          : `/monitoring/alertmanageryaml`;
+          ? `/settings/cluster/alertmanagerconfig/receivers/${receiverName}/edit`
+          : `/settings/cluster/alertmanageryaml`;
         return navigate(targetUrl);
       },
     },
@@ -286,15 +317,7 @@ const ReceiverTableRow: React.FC<RowFunctionArgs<
       tooltip: !canDelete
         ? t('public~Cannot delete the default receiver, or a receiver which has a sub-route')
         : '',
-      callback: () =>
-        confirmModal({
-          title: t('public~Delete Receiver'),
-          message: t('public~Are you sure you want to delete receiver {{receiverName}}?', {
-            receiverName,
-          }),
-          btnText: t('public~Delete Receiver'),
-          executeFn: () => deleteReceiver(secret, config, receiverName, navigate),
-        }),
+      callback: () => openDeleteReceiverConfirm(),
     },
   ];
 
@@ -305,7 +328,7 @@ const ReceiverTableRow: React.FC<RowFunctionArgs<
         {(receiver.name === InitialReceivers.Critical ||
           receiver.name === InitialReceivers.Default) &&
         !integrationTypesLabel ? (
-          <Link to={`/monitoring/alertmanagerconfig/receivers/${receiver.name}/edit`}>
+          <Link to={`/settings/cluster/alertmanagerconfig/receivers/${receiver.name}/edit`}>
             {t('public~Configure')}
             <PencilAltIcon className="co-icon-space-l" />
           </Link>
@@ -433,23 +456,26 @@ const Receivers = ({ secret, config }: ReceiversProps) => {
   const { t } = useTranslation();
   const receiverString = t('public~receiver', { count: numOfIncompleteReceivers });
   return (
-    <div className="co-m-pane__body">
+    <PaneBody>
       <SectionHeading text={t('public~Receivers')} />
-      <div className="co-m-pane__filter-row">
-        <TextFilter
-          defaultValue=""
-          label={t('public~Receivers by name')}
-          onChange={(_event, val) => setReceiverFilter(val)}
-        />
-        <Link
-          className="co-m-primary-action co-m-pane__filter-row-action"
-          to="/monitoring/alertmanagerconfig/receivers/~new"
-        >
-          <Button variant="primary" data-test-id="create-receiver">
-            {t('public~Create Receiver')}
-          </Button>
-        </Link>
-      </div>
+      <Toolbar>
+        <ToolbarContent>
+          <ToolbarItem>
+            <TextFilter
+              defaultValue=""
+              label={t('public~Receivers by name')}
+              onChange={(_event, val) => setReceiverFilter(val)}
+            />
+          </ToolbarItem>
+          <ToolbarItem align={{ default: 'alignEnd' }}>
+            <Link to="/settings/cluster/alertmanagerconfig/receivers/~new">
+              <Button variant="primary" data-test="create-receiver">
+                {t('public~Create Receiver')}
+              </Button>
+            </Link>
+          </ToolbarItem>
+        </ToolbarContent>
+      </Toolbar>
       {numOfIncompleteReceivers > 0 && (
         <Alert
           isInline
@@ -475,7 +501,7 @@ const Receivers = ({ secret, config }: ReceiversProps) => {
           data={receivers}
         />
       )}
-    </div>
+    </PaneBody>
   );
 };
 
@@ -509,9 +535,7 @@ const AlertmanagerConfigWrapper: React.FC<AlertmanagerConfigWrapperProps> = Reac
     const { t } = useTranslation();
     return (
       <>
-        <Helmet>
-          <title>{t('public~Alerting')}</title>
-        </Helmet>
+        <DocumentTitle>{t('public~Alerting')}</DocumentTitle>
         <StatusBox {...obj}>
           <AlertmanagerConfiguration {...props} obj={obj.data} />
         </StatusBox>
@@ -522,54 +546,27 @@ const AlertmanagerConfigWrapper: React.FC<AlertmanagerConfigWrapperProps> = Reac
 
 export const AlertmanagerConfig: React.FC = () => {
   const { t } = useTranslation();
-  const { pathname: url } = useLocation();
 
-  const configPath = '/monitoring/alertmanagerconfig';
-  const YAMLPath = '/monitoring/alertmanageryaml';
+  const configPath = 'alertmanagerconfig';
+  const YAMLPath = 'alertmanageryaml';
 
   const breadcrumbs = breadcrumbsForGlobalConfig('Alertmanager', configPath);
 
   return (
     <>
-      <div className="pf-v6-c-page__main-breadcrumb">
-        <Breadcrumb className="monitoring-breadcrumbs">
-          <BreadcrumbItem>
-            <Link className="pf-v6-c-breadcrumb__link" to={breadcrumbs[0].path}>
-              {breadcrumbs[0].name}
-            </Link>
-          </BreadcrumbItem>
-          <BreadcrumbItem isActive>{breadcrumbs[1].name}</BreadcrumbItem>
-        </Breadcrumb>
-      </div>
-      <div className="co-m-nav-title co-m-nav-title--detail co-m-nav-title--breadcrumbs">
-        <PrimaryHeading>
-          <div className="co-m-pane__name co-resource-item">
-            <span className="co-resource-item__resource-name" data-test-id="resource-title">
-              {t('public~Alertmanager')}
-            </span>
-          </div>
-        </PrimaryHeading>
-      </div>
-      <ul className="co-m-horizontal-nav__menu">
-        <li
-          className={classNames('co-m-horizontal-nav__menu-item', {
-            'co-m-horizontal-nav-item--active': url === configPath,
-          })}
-        >
-          <Link to={configPath} data-test-id="horizontal-link-details">
-            {t('public~Details')}
-          </Link>
-        </li>
-        <li
-          className={classNames('co-m-horizontal-nav__menu-item', {
-            'co-m-horizontal-nav-item--active': url === YAMLPath,
-          })}
-        >
-          <Link to={YAMLPath} data-test-id="horizontal-link-yaml">
-            {t('public~YAML')}
-          </Link>
-        </li>
-      </ul>
+      <PageHeading breadcrumbs={breadcrumbs} title={t('public~Alertmanager')} />
+      <NavBar
+        pages={[
+          {
+            name: t('public~Details'),
+            href: configPath,
+          },
+          {
+            name: t('public~YAML'),
+            href: YAMLPath,
+          },
+        ]}
+      />
       <Firehose
         resources={[
           {

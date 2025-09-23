@@ -1,11 +1,17 @@
 import * as React from 'react';
-import { Helmet } from 'react-helmet';
-import * as classNames from 'classnames';
+import { Helmet } from 'react-helmet-async';
 import * as _ from 'lodash-es';
 /* eslint-disable import/named */
 import { useTranslation, withTranslation, WithTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
-import { Link, Routes, Route, useParams, Navigate, useLocation } from 'react-router-dom-v5-compat';
+import {
+  Routes,
+  Route,
+  useParams,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom-v5-compat';
 import {
   HorizontalNavTab as DynamicResourceNavTab,
   isHorizontalNavTab as DynamicIsResourceNavTab,
@@ -14,7 +20,9 @@ import {
 } from '@console/dynamic-plugin-sdk/src/extensions/horizontal-nav-tabs';
 import { ExtensionK8sGroupModel } from '@console/dynamic-plugin-sdk/src/api/common-types';
 import { PageTitleContext } from '@console/shared/src/components/pagetitle/PageTitleContext';
+import { Tabs, Tab, TabTitleText } from '@patternfly/react-core';
 import { ErrorBoundaryPage } from '@console/shared/src/components/error';
+import PageBody from '@console/shared/src/components/layout/PageBody';
 import { K8sResourceKind, K8sResourceCommon } from '../../module/k8s';
 import { referenceForModel, referenceFor, referenceForExtensionModel } from '../../module/k8s/k8s';
 import { PodsPage } from '../pod';
@@ -26,8 +34,6 @@ import {
   NavPage,
 } from '@console/dynamic-plugin-sdk/src/extensions/console-types';
 import { useExtensions, HorizontalNavTab, isHorizontalNavTab } from '@console/plugin-sdk/src';
-
-const removeLeadingSlash = (str: string | undefined) => str?.replace(/^\//, '') || '';
 
 export const editYamlComponent = (props) => (
   <AsyncComponent loader={() => import('../edit-yaml').then((c) => c.EditYAML)} obj={props.obj} />
@@ -174,35 +180,44 @@ export const NavBar: React.FC<NavBarProps> = ({ pages }) => {
   const { t } = useTranslation();
   const { telemetryPrefix, titlePrefix } = React.useContext(PageTitleContext);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const sliced = location.pathname.split('/');
-  const lastElement = sliced.pop();
+  const lastElement = decodeURIComponent(sliced.pop());
   const defaultPage =
     pages.filter((p) => {
       return p.href === lastElement;
     }).length === 0;
   const baseURL = defaultPage ? location.pathname : sliced.join('/');
 
+  // the div wrapper prevents the tabs from collapsing in a flexbox
   const tabs = (
-    <>
-      {pages.map(({ name, nameKey, href }) => {
-        const isURLMatch = defaultPage ? href === '' : lastElement === href;
+    <div>
+      <Tabs
+        activeKey={defaultPage ? '' : lastElement}
+        component="nav"
+        className="co-horizontal-nav"
+      >
+        {pages.map(({ name, nameKey, href }) => {
+          const to = `${baseURL.replace(/\/$/, '')}/${encodeURIComponent(href)}`;
 
-        const klass = classNames('co-m-horizontal-nav__menu-item', {
-          'co-m-horizontal-nav-item--active': isURLMatch,
-        });
-        return (
-          <li className={klass} key={href}>
-            <Link
-              to={`${baseURL.replace(/\/$/, '')}/${removeLeadingSlash(href)}`}
+          return (
+            <Tab
+              key={href}
+              eventKey={href}
+              href={to}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(to);
+              }}
               data-test-id={`horizontal-link-${nameKey ? nameKey.split('~')[1] : name}`}
-            >
-              {nameKey ? t(nameKey) : name}
-            </Link>
-          </li>
-        );
-      })}
-    </>
+              title={<TabTitleText>{nameKey ? t(nameKey) : name}</TabTitleText>}
+              aria-controls={undefined} // there is no corresponding tab content to control, so this ID is invalid
+            />
+          );
+        })}
+      </Tabs>
+    </div>
   );
 
   const activePage = pages.find(({ href }) => {
@@ -219,7 +234,7 @@ export const NavBar: React.FC<NavBarProps> = ({ pages }) => {
             : `${activePage?.nameKey ? t(activePage.nameKey) : activePage?.name}`}
         </title>
       </Helmet>
-      <ul className="co-m-horizontal-nav__menu">{tabs}</ul>
+      {tabs}
     </>
   );
 };
@@ -336,7 +351,7 @@ export const HorizontalNav = React.memo((props: HorizontalNavProps) => {
   const routes = pages.map((p) => {
     return (
       <Route
-        path={p.path || p.href}
+        path={p.path || encodeURIComponent(p.href)}
         key={p.nameKey || p.name}
         element={
           <ErrorBoundaryPage>
@@ -362,10 +377,10 @@ export const HorizontalNav = React.memo((props: HorizontalNavProps) => {
   }
 
   return (
-    <div className={classNames('co-m-page__body', props.className)}>
-      <div className="co-m-horizontal-nav">{!props.hideNav && <NavBar pages={pages} />}</div>
+    <PageBody className={props.className}>
+      {!props.hideNav && <NavBar pages={pages} />}
       {renderContent(routes)}
-    </div>
+    </PageBody>
   );
 }, _.isEqual);
 
@@ -377,10 +392,19 @@ export const HorizontalNavFacade: React.FC<HorizontalNavFacadeProps> = ({
   resource,
   pages,
   customData,
+  contextId,
 }) => {
   const obj = { data: resource, loaded: true };
 
-  return <HorizontalNav obj={obj} pages={pages} customData={customData} noStatusBox />;
+  return (
+    <HorizontalNav
+      obj={obj}
+      pages={pages}
+      customData={customData}
+      contextId={contextId}
+      noStatusBox
+    />
+  );
 };
 
 export type PodsComponentProps = {
@@ -409,8 +433,6 @@ export type Page<D = any> = Partial<Omit<NavPage, 'component'>> & {
 
 export type NavBarProps = {
   pages: Page[];
-  baseURL?: string;
-  basePath?: string;
 };
 
 export type HorizontalNavProps = Omit<HorizontalNavFacadeProps, 'pages' | 'resource'> & {

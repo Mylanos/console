@@ -12,7 +12,6 @@ import {
 import { PercentIcon } from '@patternfly/react-icons/dist/esm/icons/percent-icon';
 import { FormikErrors, useFormikContext } from 'formik';
 import { useTranslation } from 'react-i18next';
-import { RedExclamationCircleIcon } from '@console/dynamic-plugin-sdk';
 import { HorizontalPodAutoscalerKind, HPAMetric } from '@console/internal/module/k8s';
 import { getMetricByType } from './hpa-utils';
 import { HPAFormValues, SupportedMetricTypes } from './types';
@@ -51,21 +50,18 @@ const HPAUtilizationField: React.FC<HPAUtilizationFieldProps> = ({
             isDisabled={disabled}
             onChange={onUpdate}
             value={Number.isNaN(value) ? '' : value}
+            aria-describedby={`${type}-utilization-unit`}
           />
         </InputGroupItem>
-        <InputGroupItem isBox>
-          <InputGroupText id="percent" aria-label="%">
-            <PercentIcon />
-          </InputGroupText>
-        </InputGroupItem>
+        <InputGroupText id={`${type}-utilization-unit`}>
+          <PercentIcon />
+        </InputGroupText>
       </InputGroup>
 
       <FormHelperText>
         <HelperText>
           {error ? (
-            <HelperTextItem variant="error" icon={<RedExclamationCircleIcon />}>
-              {error}
-            </HelperTextItem>
+            <HelperTextItem variant="error">{error}</HelperTextItem>
           ) : (
             <HelperTextItem>
               {t(

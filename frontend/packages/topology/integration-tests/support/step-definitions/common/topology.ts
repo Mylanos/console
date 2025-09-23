@@ -17,6 +17,7 @@ import {
   navigateTo,
   createForm,
 } from '@console/dev-console/integration-tests/support/pages/app';
+import { checkDeveloperPerspective } from '@console/dev-console/integration-tests/support/pages/functions/checkDeveloperPerspective';
 import {
   verifyAndInstallGitopsPrimerOperator,
   verifyAndInstallPipelinesOperator,
@@ -24,6 +25,10 @@ import {
 import { topologyPO } from '@console/topology/integration-tests/support/page-objects/topology-po';
 import { topologyPage } from '@console/topology/integration-tests/support/pages/topology/topology-page';
 import { topologySidePane } from '@console/topology/integration-tests/support/pages/topology/topology-side-pane-page';
+
+Given('user is at administrator perspective', () => {
+  perspective.switchTo(switchPerspective.Administrator);
+});
 
 Given('user is at the Topology page', () => {
   navigateTo(devNavigationMenu.Topology);
@@ -35,8 +40,18 @@ Given('user is at Topology page', () => {
   topologyPage.verifyTopologyPage();
 });
 
+Given('user is at Topology page in the admin view', () => {
+  cy.get('[data-quickstart-id="qs-nav-workloads"]').should('be.visible').click({ force: true });
+  cy.byLegacyTestID('topology-header').should('be.visible').click({ force: true });
+  topologyPage.verifyTopologyPage();
+});
+
 When('user navigates to Topology page', () => {
   navigateTo(devNavigationMenu.Topology);
+});
+
+When('user navigates to Topology page in admin view', () => {
+  cy.byLegacyTestID('topology-header').should('exist').click({ force: true });
 });
 
 Then('user is able to see workload {string} in topology page list view', (workloadName: string) => {
@@ -102,6 +117,7 @@ Then('user is able to see health check notification', () => {
 });
 
 Given('user is at developer perspective', () => {
+  checkDeveloperPerspective();
   perspective.switchTo(switchPerspective.Developer);
   guidedTour.close();
   nav.sidenav.switcher.shouldHaveText(switchPerspective.Developer);
@@ -145,6 +161,7 @@ Given(
 );
 
 Given('user is at Add page', () => {
+  checkDeveloperPerspective();
   navigateTo(devNavigationMenu.Add);
 });
 
@@ -158,6 +175,12 @@ When(
 Then('user will see workload disappeared from topology', () => {
   navigateTo(devNavigationMenu.Add);
   navigateTo(devNavigationMenu.Topology);
+  cy.get(topologyPO.emptyStateIcon).should('be.visible');
+});
+
+Then('user will see workload disappeared from topology in admin view', () => {
+  cy.byLegacyTestID('developer-catalog-header').should('exist').click({ force: true });
+  cy.byLegacyTestID('topology-header').should('exist').click({ force: true });
   cy.get(topologyPO.emptyStateIcon).should('be.visible');
 });
 

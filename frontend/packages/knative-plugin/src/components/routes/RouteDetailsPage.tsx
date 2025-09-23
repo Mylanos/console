@@ -1,11 +1,10 @@
 import * as React from 'react';
-import { ClipboardCopy } from '@patternfly/react-core';
+import { ClipboardCopy, DescriptionList, Grid, GridItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { useParams, useLocation } from 'react-router-dom-v5-compat';
 import { useActivePerspective } from '@console/dynamic-plugin-sdk';
 import { Conditions } from '@console/internal/components/conditions';
 import { DetailsPage } from '@console/internal/components/factory';
-import { RoutesDetailsProps } from '@console/internal/components/routes';
 import {
   DetailsItem,
   detailsPage,
@@ -14,13 +13,19 @@ import {
   ResourceSummary,
   SectionHeading,
 } from '@console/internal/components/utils';
-import { K8sKind, K8sResourceKind, referenceForModel } from '@console/internal/module/k8s';
+import {
+  K8sKind,
+  K8sResourceKind,
+  referenceForModel,
+  RouteKind,
+} from '@console/internal/module/k8s';
 import {
   ActionMenu,
   ActionMenuVariant,
   ActionServiceProvider,
   useTabbedTableBreadcrumbsFor,
 } from '@console/shared';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import { PRIVATE_KNATIVE_SERVING_LABEL } from '../../const';
 import { serverlessTab } from '../../utils/serverless-tab-utils';
 
@@ -30,14 +35,14 @@ const RouteDetails: React.FC<RoutesDetailsProps> = ({ obj: route }) => {
     route?.metadata?.labels?.[PRIVATE_KNATIVE_SERVING_LABEL] === 'cluster-local';
   return (
     <>
-      <div className="co-m-pane__body">
+      <PaneBody>
         <SectionHeading text={t('knative-plugin~Route details')} />
-        <div className="row">
-          <div className="col-sm-6">
+        <Grid hasGutter>
+          <GridItem sm={6}>
             <ResourceSummary resource={route} />
-          </div>
-          <div className="col-sm-6">
-            <dl>
+          </GridItem>
+          <GridItem sm={6}>
+            <DescriptionList>
               <DetailsItem
                 label={t('knative-plugin~Location')}
                 obj={route}
@@ -50,20 +55,20 @@ const RouteDetails: React.FC<RoutesDetailsProps> = ({ obj: route }) => {
                   </ClipboardCopy>
                 ) : (
                   <ExternalLinkWithCopy
-                    link={route?.status?.url}
+                    href={route?.status?.url}
                     text={route?.status?.url}
-                    additionalClassName="co-external-link--block"
+                    displayBlock
                   />
                 )}
               </DetailsItem>
-            </dl>
-          </div>
-        </div>
-      </div>
-      <div className="co-m-pane__body">
+            </DescriptionList>
+          </GridItem>
+        </Grid>
+      </PaneBody>
+      <PaneBody>
         <SectionHeading text={t('knative-plugin~Conditions')} />
         <Conditions conditions={route?.status?.conditions} />
-      </div>
+      </PaneBody>
     </>
   );
 };
@@ -108,3 +113,7 @@ const RouteDetailsPage: React.FC<React.ComponentProps<typeof DetailsPage>> = (pr
 };
 
 export default RouteDetailsPage;
+
+type RoutesDetailsProps = {
+  obj: RouteKind;
+};

@@ -1,6 +1,4 @@
-import * as React from 'react';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
+import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import * as UIActions from '@console/internal/actions/ui';
 import { RootState } from '@console/internal/redux';
@@ -13,7 +11,7 @@ export const useShowOperandsInAllNamespaces: UseShowOperandsInAllNamespaces = ()
   const showOperandsInAllNamespaces = useSelector((state: RootState) =>
     state.UI.get('showOperandsInAllNamespaces'),
   );
-  const setShowOperandsInAllNamespaces = React.useCallback(
+  const setShowOperandsInAllNamespaces = useCallback(
     (value: boolean) => dispatch(UIActions.setShowOperandsInAllNamespaces(value)),
     [dispatch],
   );

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { deseralizeData, seralizeData } from '../utils/user-settings';
+import { deserializeData, seralizeData } from '../utils/user-settings';
 
 export const useUserSettingsLocalStorage = <T>(
   storageKey: string,
@@ -10,14 +10,18 @@ export const useUserSettingsLocalStorage = <T>(
 ): [T, React.Dispatch<React.SetStateAction<T>>] => {
   // Mount status for safty state updates
   const mounted = React.useRef(true);
-  React.useEffect(() => () => (mounted.current = false), []);
+  React.useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const storage = session ? sessionStorage : localStorage;
   const keyRef = React.useRef(userSettingsKey);
   const defaultValueRef = React.useRef(defaultValue);
   const [data, setData] = React.useState(() => {
     const valueInStorage =
-      storage.getItem(storageKey) !== null && deseralizeData(storage.getItem(storageKey));
+      storage.getItem(storageKey) !== null && deserializeData(storage.getItem(storageKey));
     return valueInStorage?.hasOwnProperty(keyRef.current) &&
       valueInStorage[keyRef.current] !== undefined
       ? valueInStorage[keyRef.current]
@@ -29,7 +33,7 @@ export const useUserSettingsLocalStorage = <T>(
   const storageUpdated = React.useCallback(
     (event: StorageEvent) => {
       if (mounted.current && event.storageArea === storage && event.key === storageKey) {
-        const configMapData = deseralizeData(event.newValue);
+        const configMapData = deserializeData(event.newValue);
         const newData = configMapData?.[keyRef.current];
 
         if (newData !== undefined && seralizeData(newData) !== seralizeData(dataRef.current)) {
@@ -56,7 +60,7 @@ export const useUserSettingsLocalStorage = <T>(
       const previousData = dataRef.current;
       const newState =
         typeof action === 'function' ? (action as (prevState: T) => T)(previousData) : action;
-      const configMapData = deseralizeData(storage.getItem(storageKey)) ?? {};
+      const configMapData = deserializeData(storage.getItem(storageKey)) ?? {};
       if (
         newState !== undefined &&
         seralizeData(newState) !== seralizeData(configMapData?.[keyRef.current])

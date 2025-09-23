@@ -1,21 +1,19 @@
 package oauth2
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/oauth2"
 
-	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -26,9 +24,8 @@ import (
 	"github.com/openshift/console/pkg/auth/sessions"
 	"github.com/openshift/console/pkg/proxy"
 	"github.com/openshift/console/pkg/serverutils/asynccache"
+	"github.com/openshift/console/pkg/utils"
 )
-
-const tokenReviewPath = "/apis/authentication.k8s.io/v1/tokenreviews"
 
 // openShiftAuth implements OpenShift Authentication as defined in:
 // https://access.redhat.com/documentation/en-us/openshift_container_platform/4.9/html/authentication_and_authorization/understanding-authentication
@@ -38,6 +35,8 @@ type openShiftAuth struct {
 	k8sClient *http.Client
 
 	oauthEndpointCache *asynccache.AsyncCache[*oidcDiscovery]
+	sessions           *sessions.CombinedSessionStore
+	refreshLock        sync.Map
 }
 
 type oidcDiscovery struct {
@@ -65,13 +64,30 @@ func newOpenShiftAuth(ctx context.Context, k8sClient *http.Client, c *oidcConfig
 		k8sClient:  k8sClient,
 	}
 
-	// TODO: repeat the discovery several times as in the auth.go logic
 	var err error
+	// TODO: repeat the discovery several times as in the auth.go logic
 	o.oauthEndpointCache, err = asynccache.NewAsyncCache[*oidcDiscovery](ctx, 5*time.Minute, o.getOIDCDiscoveryInternal)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct OAuth endpoint cache: %w", err)
 	}
 	o.oauthEndpointCache.Run(ctx)
+
+	authnKey, err := utils.RandomString(64)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptionKey, err := utils.RandomString(32)
+	if err != nil {
+		return nil, err
+	}
+
+	o.sessions = sessions.NewSessionStore(
+		[]byte(authnKey),
+		[]byte(encryptionKey),
+		c.secureCookies,
+		c.cookiePath,
+	)
 
 	return o, nil
 }
@@ -135,51 +151,21 @@ func (o *openShiftAuth) getOIDCDiscoveryInternal(ctx context.Context) (*oidcDisc
 	return metadata, nil
 }
 
-func (o *openShiftAuth) login(w http.ResponseWriter, _ *http.Request, token *oauth2.Token) (*sessions.LoginState, error) {
+func (o *openShiftAuth) login(w http.ResponseWriter, r *http.Request, token *oauth2.Token) (*sessions.LoginState, error) {
 	if token.AccessToken == "" {
 		return nil, fmt.Errorf("token response did not contain an access token %#v", token)
 	}
-	ls := sessions.NewRawLoginState(token.AccessToken)
 
-	expiresIn := (time.Hour * 24).Seconds()
-	if !token.Expiry.IsZero() {
-		expiresIn = token.Expiry.Sub(time.Now()).Seconds()
+	ls, err := o.sessions.AddSession(w, r, nil, token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
-	// NOTE: In Tectonic, we previously had issues with tokens being bigger than
-	// cookies can handle. Since OpenShift doesn't store groups in the token, the
-	// token can't grow arbitrarily big, so we assume it will always fit in a cookie
-	// value.
-	//
-	// NOTE: in the future we'll have to avoid the use of cookies. This should likely switch to frontend
-	// only logic using the OAuth2 implicit flow.
-	// https://tools.ietf.org/html/rfc6749#section-4.2
-	cookie := http.Cookie{
-		Name:     sessions.OpenshiftAccessTokenCookieName,
-		Value:    ls.AccessToken(),
-		MaxAge:   int(expiresIn),
-		HttpOnly: true,
-		Path:     o.cookiePath,
-		Secure:   o.secureCookies,
-		SameSite: http.SameSiteStrictMode,
-	}
-
-	http.SetCookie(w, &cookie)
 	return ls, nil
 }
 
-// NOTE: cookies are going away, this should be removed in the future
-func (o *openShiftAuth) DeleteCookie(w http.ResponseWriter, r *http.Request) {
-	// Delete session cookie
-	cookie := http.Cookie{
-		Name:     sessions.OpenshiftAccessTokenCookieName,
-		Value:    "",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Path:     o.cookiePath,
-		Secure:   o.secureCookies,
-	}
-	http.SetCookie(w, &cookie)
+func (o *openShiftAuth) DeleteSession(w http.ResponseWriter, r *http.Request) {
+	o.sessions.DeleteSession(w, r)
 }
 
 func (o *openShiftAuth) logout(w http.ResponseWriter, r *http.Request) {
@@ -192,17 +178,19 @@ func (o *openShiftAuth) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie(sessions.OpenshiftAccessTokenCookieName)
+	ls, err := o.getLoginState(w, r)
 	if err != nil {
-		klog.V(4).Infof("the session cookie is not present: %v", err)
-		w.WriteHeader(http.StatusNoContent)
+		klog.Errorf("error logging out: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	token := ls.AccessToken()
 
 	configWithBearerToken := &rest.Config{
 		Host:        "https://" + k8sURL.Host,
 		Transport:   o.k8sClient.Transport,
-		BearerToken: cookie.Value,
+		BearerToken: token,
 		Timeout:     30 * time.Second,
 	}
 
@@ -212,109 +200,83 @@ func (o *openShiftAuth) logout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "removing the session failed", http.StatusInternalServerError)
 		return
 	}
-	err = oauthClient.OAuthAccessTokens().Delete(ctx, tokenToObjectName(cookie.Value), metav1.DeleteOptions{})
+	err = oauthClient.OAuthAccessTokens().Delete(ctx, tokenToObjectName(token), metav1.DeleteOptions{})
 	if err != nil {
 		http.Error(w, "removing the session failed", http.StatusInternalServerError)
 		return
 	}
 
-	o.DeleteCookie(w, r)
+	//  Delete the session
+	o.sessions.DeleteSession(w, r)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (o *openShiftAuth) refreshSession(ctx context.Context, w http.ResponseWriter, r *http.Request, oauthConfig *oauth2.Config, cookieRefreshToken string) (*sessions.LoginState, error) {
+	actual, _ := o.refreshLock.LoadOrStore(cookieRefreshToken, &sync.Mutex{})
+	actual.(*sync.Mutex).Lock()
+	defer actual.(*sync.Mutex).Unlock()
+
+	session, err := o.sessions.GetSession(w, r)
+	if err != nil {
+		return nil, err
+	}
+
+	// if the refresh token got changed by someone else in the meantime (guarded by the refreshLock),
+	//  use the most current session instead of doing the full token refresh
+	if session != nil && session.RefreshToken() != cookieRefreshToken {
+		o.sessions.UpdateCookieRefreshToken(w, r, session.RefreshToken()) // we must update our own client session, too!
+		return session, nil
+	}
+
+	newTokens, err := oauthConfig.TokenSource(
+		context.WithValue(ctx, oauth2.HTTPClient, o.getClient()), // supply our client with custom trust
+		&oauth2.Token{RefreshToken: cookieRefreshToken},
+	).Token()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh a token %s: %w", cookieRefreshToken, err)
+	}
+
+	ls, err := o.sessions.UpdateTokens(w, r, nil, newTokens)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update session tokens: %w", err)
+	}
+
+	return ls, nil
+}
+
+func (o *openShiftAuth) getLoginState(w http.ResponseWriter, r *http.Request) (*sessions.LoginState, error) {
+	ls, err := o.sessions.GetSession(w, r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve login state: %v", err)
+	}
+
+	if ls == nil || ls.ShouldRotate() {
+		if refreshToken := o.sessions.GetCookieRefreshToken(r); refreshToken != "" {
+			return o.refreshSession(r.Context(), w, r, o.oauth2Config(), refreshToken)
+		}
+
+		return nil, fmt.Errorf("a session was not found on server or is expired")
+	}
+	return ls, nil
 }
 
 func (o *openShiftAuth) LogoutRedirectURL() string {
 	return o.logoutRedirectOverride
 }
 
-func (o *openShiftAuth) reviewToken(token string) (*authv1.TokenReview, error) {
-	tokenReviewURL, err := url.Parse(o.issuerURL)
+func (o *openShiftAuth) Authenticate(w http.ResponseWriter, r *http.Request) (*auth.User, error) {
+	ls, err := o.getLoginState(w, r)
 	if err != nil {
-		return nil, err
-	}
-	tokenReviewURL.Path = tokenReviewPath
-
-	tokenReview := &authv1.TokenReview{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "authentication.k8s.io/v1",
-			Kind:       "TokenReview",
-		},
-		Spec: authv1.TokenReviewSpec{
-			Token: token,
-		},
+		return nil, fmt.Errorf("authentication error: %w", err)
 	}
 
-	tokenReviewJSON, err := json.Marshal(tokenReview)
-	if err != nil {
-		return nil, err
+	if ls == nil {
+		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	req, err := http.NewRequest(http.MethodPost, tokenReviewURL.String(), bytes.NewBuffer(tokenReviewJSON))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", o.internalK8sConfig.BearerToken))
-
-	res, err := o.k8sClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("unable to validate user token: %v", res.Status)
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal the response into a TokenReview object
-	var responseTokenReview authv1.TokenReview
-	err = json.Unmarshal(body, &responseTokenReview)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the token is authenticated
-	if !responseTokenReview.Status.Authenticated {
-		err := fmt.Errorf("invalid token: %v", token)
-		if responseTokenReview.Status.Error != "" {
-			err = fmt.Errorf("invalid token: %s", responseTokenReview.Status.Error)
-		}
-		return nil, err
-	}
-
-	return tokenReview, nil
-}
-
-func (o *openShiftAuth) Authenticate(_ http.ResponseWriter, r *http.Request) (*auth.User, error) {
-	cookie, err := r.Cookie(sessions.OpenshiftAccessTokenCookieName)
-	if err != nil {
-		return nil, err
-	}
-
-	if cookie.Value == "" {
-		return nil, fmt.Errorf("unauthenticated, no value for cookie %s", sessions.OpenshiftAccessTokenCookieName)
-	}
-
-	if o.internalK8sConfig.BearerToken != "" {
-		tokenReviewResponse, err := o.reviewToken(cookie.Value)
-		if err != nil {
-			klog.Errorf("failed to authenticate user token: %v", err)
-			return nil, err
-		}
-		return &auth.User{
-			Token:    cookie.Value,
-			Username: tokenReviewResponse.Status.User.Username,
-			ID:       tokenReviewResponse.Status.User.UID,
-		}, nil
-	}
-
-	klog.V(4).Info("TokenReview skipped, no bearer token is set on internal K8s rest config")
 	return &auth.User{
-		Token: cookie.Value,
+		Token: ls.AccessToken(),
 	}, nil
 }
 

@@ -1,35 +1,71 @@
-import * as React from 'react';
-import { shallow } from 'enzyme';
-import { Drawer } from '@console/shared';
-import CloseButton from '@console/shared/src/components/close-button';
-import CloudShellDrawer from '../CloudShellDrawer';
+import { configure, render } from '@testing-library/react';
+import { useFlag } from '@console/shared/src/hooks/flag';
+import { useIsCloudShellExpanded } from '@console/webterminal-plugin/src/redux/reducers/cloud-shell-selectors';
+import { CloudShellDrawer } from '../CloudShellDrawer';
+import '@testing-library/jest-dom';
 
 jest.mock('@console/shared/src/hooks/useTelemetry', () => ({
   useTelemetry: () => {},
 }));
 
-describe('CloudShellDrawerComponent', () => {
+jest.mock('@console/webterminal-plugin/src/components/cloud-shell/MultiTabbedTerminal', () => ({
+  MultiTabbedTerminal: () => 'Terminal content',
+}));
+
+jest.mock('@console/shared/src/hooks/flag', () => ({
+  useFlag: jest.fn(),
+}));
+
+jest.mock('@console/webterminal-plugin/src/redux/actions/cloud-shell-dispatchers', () => ({
+  useToggleCloudShellExpanded: () => jest.fn(),
+}));
+
+jest.mock('@console/webterminal-plugin/src/redux/reducers/cloud-shell-selectors', () => ({
+  useIsCloudShellExpanded: jest.fn(() => true),
+}));
+
+const mockUseFlag = useFlag as jest.Mock;
+const mockUseIsCloudShellExpanded = useIsCloudShellExpanded as jest.Mock;
+
+configure({ testIdAttribute: 'data-test' });
+
+describe('CloudShellDrawer', () => {
   it('should render children as Drawer children when present', () => {
-    const wrapper = shallow(
-      <CloudShellDrawer onClose={() => null}>
-        <p data-test="terminal-content">Terminal content</p>
+    mockUseFlag.mockReturnValue(true);
+    mockUseIsCloudShellExpanded.mockReturnValue(true);
+
+    const wrapper = render(
+      <CloudShellDrawer>
+        <p>Console webapp</p>
       </CloudShellDrawer>,
     );
-    expect(wrapper.find(Drawer).children().find('[data-test="terminal-content"]').text()).toEqual(
-      'Terminal content',
-    );
+    expect(wrapper.getByText('Console webapp')).toBeInTheDocument();
+    expect(wrapper.getByText('Terminal content')).toBeInTheDocument();
   });
 
-  it('should call onClose when clicked on close button', () => {
-    const onClose = jest.fn();
-    const wrapper = shallow(
-      <CloudShellDrawer onClose={onClose}>
-        <p>Terminal content</p>
+  it('should still render children when the Drawer is closed', () => {
+    mockUseFlag.mockReturnValue(true);
+    mockUseIsCloudShellExpanded.mockReturnValue(false);
+
+    const wrapper = render(
+      <CloudShellDrawer open={false}>
+        <p data-test="body">Console webapp</p>
       </CloudShellDrawer>,
     );
-    const closeButton = wrapper.find(Drawer).shallow().find(CloseButton);
-    expect(closeButton.props().ariaLabel).toEqual('Close terminal');
-    closeButton.simulate('click');
-    expect(onClose).toHaveBeenCalled();
+    expect(wrapper.getByTestId('body').innerHTML).toEqual('Console webapp');
+    expect(wrapper.queryByText('Terminal content')).not.toBeInTheDocument();
+  });
+
+  it('should render children even if web terminal is not available', () => {
+    mockUseFlag.mockReturnValue(false);
+    mockUseIsCloudShellExpanded.mockReturnValue(true);
+
+    const wrapper = render(
+      <CloudShellDrawer open={false}>
+        <p>Console webapp</p>
+      </CloudShellDrawer>,
+    );
+    expect(wrapper.getByText('Console webapp')).toBeInTheDocument();
+    expect(wrapper.queryByText('Terminal content')).not.toBeInTheDocument();
   });
 });

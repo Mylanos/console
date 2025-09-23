@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { CatalogItem, ExtensionHook } from '@console/dynamic-plugin-sdk';
@@ -16,23 +16,24 @@ const normalizeKamelets = (
   t: TFunction,
 ): CatalogItem[] => {
   const normalizedKamelets = kamelets.map((k) => {
-    const {
-      kind,
-      metadata: { uid, name, creationTimestamp, annotations },
-      spec,
-    } = k;
+    const kind = k.kind || '';
+    const uid = k.metadata?.uid || '';
+    const name = k.metadata?.name || '';
+    const annotations = k.metadata?.annotations;
+    const { spec } = k;
+    const creationTimestamp = k.metadata?.creationTimestamp;
     const provider = annotations?.[CAMEL_K_PROVIDER_ANNOTATION] || '';
-    const iconUrl = getEventSourceIcon(kind, k) as string;
+    const iconUrl = getEventSourceIcon(kind, k);
     const href = `/catalog/ns/${namespace}/eventsource?sourceKind=${CamelKameletBindingModel.kind}&name=${name}`;
     return {
       uid,
       name: spec?.definition?.title || name,
       description: spec?.definition?.description || '',
       provider,
-      creationTimestamp,
+      creationTimestamp: creationTimestamp || undefined,
       cta: { label: t('knative-plugin~Create Event Source'), href },
       type: 'EventSource',
-      icon: { url: iconUrl },
+      icon: { url: typeof iconUrl === 'string' ? iconUrl : '' },
       details: {
         properties: [
           {
@@ -58,7 +59,7 @@ const useKameletsProvider: ExtensionHook<CatalogItem[]> = ({
   });
   const [kamelets, kameletsLoaded, kameletsLoadError] = useKameletsData(namespace);
 
-  const normalizedSource = React.useMemo(() => {
+  const normalizedSource = useMemo(() => {
     if (!kameletsLoaded || !canCreateKameletBinding) return [];
     const kameletSource = kamelets.filter(
       (k) => k.metadata?.labels?.[CAMEL_K_TYPE_LABEL] === 'source',

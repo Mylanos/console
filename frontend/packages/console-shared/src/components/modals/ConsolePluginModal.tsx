@@ -1,4 +1,5 @@
-import * as React from 'react';
+import { useState } from 'react';
+import { Form } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import {
   createModalLauncher,
@@ -6,35 +7,28 @@ import {
   ModalBody,
   ModalSubmitFooter,
 } from '@console/internal/components/factory/modal';
-import { withHandlePromise, HandlePromiseProps } from '@console/internal/components/utils';
 import { ConsoleOperatorConfigModel } from '@console/internal/models';
 import { k8sPatch, K8sResourceKind } from '@console/internal/module/k8s';
 import {
   ConsolePluginRadioInputs,
   ConsolePluginWarning,
 } from '@console/shared/src/components/utils';
+import { usePromiseHandler } from '@console/shared/src/hooks/promise-handler';
 import { getPluginPatch, isPluginEnabled } from '@console/shared/src/utils';
 
-export const ConsolePluginModal = withHandlePromise((props: ConsolePluginModalProps) => {
-  const {
-    cancel,
-    close,
-    consoleOperatorConfig,
-    csvPluginsCount,
-    errorMessage,
-    handlePromise,
-    inProgress,
-    pluginName,
-    trusted,
-  } = props;
+export const ConsolePluginModal = (props: ConsolePluginModalProps) => {
+  const { cancel, close, consoleOperatorConfig, csvPluginsCount, pluginName, trusted } = props;
+  const [handlePromise, inProgress, errorMessage] = usePromiseHandler();
   const previouslyEnabled = isPluginEnabled(consoleOperatorConfig, pluginName);
   const { t } = useTranslation();
-  const [enabled, setEnabled] = React.useState(previouslyEnabled);
-  const submit = (event) => {
+  const [enabled, setEnabled] = useState(previouslyEnabled);
+  const submit = (event): void => {
     event.preventDefault();
     const patch = getPluginPatch(consoleOperatorConfig, pluginName, enabled);
     const promise = k8sPatch(ConsoleOperatorConfigModel, consoleOperatorConfig, [patch]);
-    handlePromise(promise, close);
+    handlePromise(promise)
+      .then(() => close())
+      .catch(() => {});
   };
 
   return (
@@ -54,17 +48,19 @@ export const ConsolePluginModal = withHandlePromise((props: ConsolePluginModalPr
                 'console-shared~This console plugin provides a custom interface that can be included in the console. Updating the enablement of this console plugin will prompt for the console to be refreshed once it has been updated. Make sure you trust this console plugin before enabling.',
               )}
         </p>
-        <ConsolePluginRadioInputs
-          autofocus
-          name={pluginName}
-          enabled={enabled}
-          onChange={setEnabled}
-        />
-        <ConsolePluginWarning
-          previouslyEnabled={previouslyEnabled}
-          enabled={enabled}
-          trusted={trusted}
-        />
+        <Form>
+          <ConsolePluginRadioInputs
+            autofocus
+            name={pluginName}
+            enabled={enabled}
+            onChange={setEnabled}
+          />
+          <ConsolePluginWarning
+            previouslyEnabled={previouslyEnabled}
+            enabled={enabled}
+            trusted={trusted}
+          />
+        </Form>
       </ModalBody>
       <ModalSubmitFooter
         errorMessage={errorMessage}
@@ -75,7 +71,7 @@ export const ConsolePluginModal = withHandlePromise((props: ConsolePluginModalPr
       />
     </form>
   );
-});
+};
 
 export const consolePluginModal = createModalLauncher(ConsolePluginModal);
 
@@ -84,9 +80,6 @@ export type ConsolePluginModalProps = {
   csvPluginsCount?: number;
   pluginName: string;
   trusted: boolean;
-  handlePromise: <T>(promise: Promise<T>) => Promise<T>;
-  inProgress: boolean;
-  errorMessage: string;
   cancel?: () => void;
   close?: () => void;
-} & HandlePromiseProps;
+};

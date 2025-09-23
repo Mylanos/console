@@ -1,11 +1,12 @@
 import { projectDropdown } from '@console/cypress-integration-tests/views/common';
+import { guidedTour } from '@console/cypress-integration-tests/views/guided-tour';
 import { checkErrors, testName } from '../../../integration-tests-cypress/support';
 import { nav } from '../../../integration-tests-cypress/views/nav';
 import { GlobalInstalledNamespace, operator, TestOperandProps } from '../views/operator.view';
 
 const testOperator = {
   name: 'Data Grid',
-  operatorHubCardTestID: 'datagrid-redhat-operators-openshift-marketplace',
+  operatorHubCardTestID: 'operator-Data Grid',
   installedNamespace: testName,
 };
 
@@ -20,6 +21,7 @@ const testOperand: TestOperandProps = {
 describe(`Installing "${testOperator.name}" operator in test namespace`, () => {
   before(() => {
     cy.login();
+    guidedTour.close();
     cy.createProjectWithCLI(testName);
   });
 
@@ -48,7 +50,7 @@ describe(`Installing "${testOperator.name}" operator in test namespace`, () => {
     cy.log(
       `Operator "${testOperator.name}" should not be installed in "${GlobalInstalledNamespace}"`,
     );
-    nav.sidenav.clickNavLink(['Operators', 'Installed Operators']);
+    nav.sidenav.clickNavLink(['Ecosystem', 'Installed Operators']);
     projectDropdown.selectProject(GlobalInstalledNamespace);
     projectDropdown.shouldContain(GlobalInstalledNamespace);
     cy.get('.loading-skeleton--table').should('not.exist');

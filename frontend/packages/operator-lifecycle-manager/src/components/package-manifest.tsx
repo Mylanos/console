@@ -1,6 +1,6 @@
 import * as React from 'react';
+import { css } from '@patternfly/react-styles';
 import { sortable } from '@patternfly/react-table';
-import * as classNames from 'classnames';
 import * as _ from 'lodash';
 import { Trans, useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom-v5-compat';
@@ -14,13 +14,13 @@ import {
 } from '@console/internal/components/factory';
 import {
   ConsoleEmptyState,
-  Timestamp,
   ResourceLink,
   resourcePathFromModel,
 } from '@console/internal/components/utils';
 import i18n from '@console/internal/i18n';
 import { MatchExpression, referenceForModel } from '@console/internal/module/k8s';
 import { OPERATOR_HUB_LABEL } from '@console/shared';
+import { Timestamp } from '@console/shared/src/components/datetime/Timestamp';
 import { PackageManifestModel, CatalogSourceModel } from '../models';
 import { PackageManifestKind, CatalogSourceKind } from '../types';
 import { ClusterServiceVersionLogo } from './cluster-service-version-logo';
@@ -28,8 +28,8 @@ import { visibilityLabel, iconFor, defaultChannelFor } from './index';
 
 const tableColumnClasses = [
   '',
-  classNames('pf-m-hidden', 'pf-m-visible-on-lg'),
-  classNames('pf-m-hidden', 'pf-m-visible-on-lg'),
+  css('pf-m-hidden', 'pf-m-visible-on-lg'),
+  css('pf-m-hidden', 'pf-m-visible-on-lg'),
   '',
 ];
 
@@ -147,9 +147,9 @@ export const PackageManifestsPage: React.FC<PackageManifestsPageProps> = (props)
 
   const helpText = (
     <Trans ns="olm">
-      Catalogs are groups of Operators you can make available on the cluster. Use{' '}
-      <Link to="/operatorhub">OperatorHub</Link> to subscribe and grant namespaces access to use
-      installed Operators.
+      Catalogs are groups of Operators you can make available on the cluster. Use the{' '}
+      <Link to="/catalog?catalogType=operator">Software Catalog</Link> to subscribe and grant
+      namespaces access to use installed Operators.
     </Trans>
   );
 

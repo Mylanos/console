@@ -1,10 +1,18 @@
 import * as React from 'react';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { CatalogCategory } from '@console/dynamic-plugin-sdk/src';
 import { CatalogItem } from '@console/dynamic-plugin-sdk/src/extensions';
 import { isModalOpen } from '@console/internal/components/modals';
 import { useQueryParams } from '../../../hooks/useQueryParams';
-import { setURLParams, updateURLParams, getCatalogTypeCounts } from '../utils/catalog-utils';
+import PaneBody from '../../layout/PaneBody';
+import {
+  setURLParams,
+  updateURLParams,
+  getCatalogTypeCounts,
+  calculateCatalogItemRelevanceScore,
+  getRedHatPriority,
+} from '../utils/catalog-utils';
 import {
   categorize,
   findActiveCategory,
@@ -21,12 +29,11 @@ import {
   getFilterSearchParam,
 } from '../utils/filter-utils';
 import {
-  CatalogCategory,
   CatalogFilterCounts,
   CatalogFilterGroupMap,
   CatalogFilters as FiltersType,
   CatalogQueryParams,
-  CatalogSortOrder,
+  // CatalogSortOrder,
   CatalogStringMap,
   CatalogType,
   CatalogTypeCounts,
@@ -35,6 +42,9 @@ import CatalogCategories from './CatalogCategories';
 import CatalogEmptyState from './CatalogEmptyState';
 import CatalogFilters from './CatalogFilters';
 import CatalogGrid from './CatalogGrid';
+import CatalogPage from './CatalogPage';
+import CatalogPageContent from './CatalogPageContent';
+import CatalogPageTabs from './CatalogPageTabs';
 import CatalogToolbar from './CatalogToolbar';
 import CatalogTypeSelector from './CatalogTypeSelector';
 
@@ -49,6 +59,7 @@ type CatalogViewProps = {
   groupings: CatalogStringMap;
   renderTile: (item: CatalogItem) => React.ReactNode;
   hideSidebar?: boolean;
+  sortFilterGroups: boolean;
 };
 
 const CatalogView: React.FC<CatalogViewProps> = ({
@@ -62,14 +73,15 @@ const CatalogView: React.FC<CatalogViewProps> = ({
   groupings,
   renderTile,
   hideSidebar,
+  sortFilterGroups,
 }) => {
   const { t } = useTranslation();
   const queryParams = useQueryParams();
   const activeCategoryId = queryParams.get(CatalogQueryParams.CATEGORY) ?? ALL_CATEGORY;
   const activeSearchKeyword = queryParams.get(CatalogQueryParams.KEYWORD) ?? '';
   const activeGrouping = queryParams.get(CatalogQueryParams.GROUPING) ?? NO_GROUPING;
-  const sortOrder =
-    (queryParams.get(CatalogQueryParams.SORT_ORDER) as CatalogSortOrder) ?? CatalogSortOrder.ASC;
+  // const sortOrder =
+  //   (queryParams.get(CatalogQueryParams.SORT_ORDER) as CatalogSortOrder) ?? CatalogSortOrder.ASC;
   const activeFilters = React.useMemo(() => {
     const attributeFilters = {};
 
@@ -94,10 +106,7 @@ const CatalogView: React.FC<CatalogViewProps> = ({
 
   const catalogToolbarRef = React.useRef<HTMLInputElement>();
 
-  const itemsSorter = React.useCallback(
-    (itemsToSort) => _.orderBy(itemsToSort, ({ name }) => name.toLowerCase(), [sortOrder]),
-    [sortOrder],
-  );
+  // Removed itemsSorter - now using enhanced sorting from keywordCompare function
 
   const clearFilters = React.useCallback(() => {
     const params = new URLSearchParams();
@@ -130,9 +139,9 @@ const CatalogView: React.FC<CatalogViewProps> = ({
     updateURLParams(CatalogQueryParams.GROUPING, grouping);
   }, []);
 
-  const handleSortOrderChange = React.useCallback((order) => {
-    updateURLParams(CatalogQueryParams.SORT_ORDER, order);
-  }, []);
+  // const handleSortOrderChange = React.useCallback((order) => {
+  //   updateURLParams(CatalogQueryParams.SORT_ORDER, order);
+  // }, []);
 
   const handleShowAllToggle = React.useCallback((groupName) => {
     setFilterGroupsShowAll((showAll) => {
@@ -145,7 +154,8 @@ const CatalogView: React.FC<CatalogViewProps> = ({
   const catalogCategories = React.useMemo<CatalogCategory[]>(() => {
     const allCategory = { id: ALL_CATEGORY, label: t('console-shared~All items') };
     const otherCategory = { id: OTHER_CATEGORY, label: t('console-shared~Other') };
-    return [allCategory, ...(categories ?? []), otherCategory];
+    const sortedCategories = [...(categories ?? [])].sort((a, b) => a.label.localeCompare(b.label));
+    return [allCategory, ...sortedCategories, otherCategory];
   }, [categories, t]);
 
   const categorizedIds = React.useMemo(() => categorize(items, catalogCategories), [
@@ -174,7 +184,75 @@ const CatalogView: React.FC<CatalogViewProps> = ({
     const typeCounts = getCatalogTypeCounts(filteredBySearchItems, catalogTypes);
     setCatalogTypeCounts(typeCounts);
 
-    return itemsSorter(filteredByAttributes);
+    // Console table for final filtered results (only for operators)
+    if (filteredByAttributes.length > 0 && filteredByAttributes[0]?.type === 'operator') {
+      // Check if we have active filters beyond just search and category
+      const hasAttributeFilters = Object.values(activeFilters).some((filterGroup) =>
+        Object.values(filterGroup).some((filter) => filter.active),
+      );
+
+      // Only show console.table if we have search term or attribute filters
+      if (activeSearchKeyword || hasAttributeFilters) {
+        const REDHAT_PRIORITY = {
+          EXACT_MATCH: 2,
+          CONTAINS_REDHAT: 1,
+          NON_REDHAT: 0,
+        };
+
+        const tableData = filteredByAttributes.map((item) => {
+          // Ensure we have the scoring properties, calculate them if missing
+          const relevanceScore = activeSearchKeyword
+            ? (item as any).relevanceScore ??
+              calculateCatalogItemRelevanceScore(activeSearchKeyword, item)
+            : 'N/A (No search)';
+          const redHatPriority = (item as any).redHatPriority ?? getRedHatPriority(item);
+
+          return {
+            Title: item.name || 'N/A',
+            'Search Relevance Score': relevanceScore,
+            'Is Red Hat Provider (Priority)':
+              redHatPriority === REDHAT_PRIORITY.EXACT_MATCH
+                ? `Exact Match (${REDHAT_PRIORITY.EXACT_MATCH})`
+                : redHatPriority === REDHAT_PRIORITY.CONTAINS_REDHAT
+                ? `Contains Red Hat (${REDHAT_PRIORITY.CONTAINS_REDHAT})`
+                : `Non-Red Hat (${REDHAT_PRIORITY.NON_REDHAT})`,
+            Provider: item.attributes?.provider || item.provider || 'N/A',
+            Type: item.type || 'N/A',
+          };
+        });
+
+        // Build filter description
+        const activeFilterDescriptions = [];
+        if (activeSearchKeyword) activeFilterDescriptions.push(`Search: "${activeSearchKeyword}"`);
+        if (activeCategoryId !== 'all')
+          activeFilterDescriptions.push(`Category: ${activeCategoryId}`);
+
+        Object.entries(activeFilters).forEach(([filterType, filterGroup]) => {
+          const activeFilterValues = Object.entries(filterGroup)
+            .filter(([, filter]) => filter.active)
+            .map(([, filter]) => filter.label || filter.value);
+          if (activeFilterValues.length > 0) {
+            activeFilterDescriptions.push(`${filterType}: [${activeFilterValues.join(', ')}]`);
+          }
+        });
+
+        const filterDescription =
+          activeFilterDescriptions.length > 0 ? activeFilterDescriptions.join(' + ') : 'No filters';
+
+        // eslint-disable-next-line no-console
+        console.log(
+          `\n🎯 FINAL Catalog Results: ${filterDescription} (${filteredByAttributes.length} matches)`,
+        );
+        // eslint-disable-next-line no-console
+        console.table(tableData);
+      }
+    }
+
+    // Always use filteredByAttributes since keywordCompare handles both cases:
+    // - With search terms: relevance scoring + Red Hat prioritization + filtering
+    // - Without search terms: Red Hat prioritization + alphabetical sorting (no filtering)
+    // The keywordCompare function is called by filterBySearchKeyword regardless of search term presence
+    return filteredByAttributes;
   }, [
     activeCategoryId,
     activeFilters,
@@ -183,7 +261,6 @@ const CatalogView: React.FC<CatalogViewProps> = ({
     categorizedIds,
     filterGroups,
     items,
-    itemsSorter,
   ]);
 
   const totalItems = filteredItems.length;
@@ -221,55 +298,58 @@ const CatalogView: React.FC<CatalogViewProps> = ({
   }, []);
 
   return (
-    <div className="co-catalog-page">
-      {showSidebar && (
-        <div className="co-catalog-page__tabs">
-          {showCategories && (
-            <CatalogCategories
-              categories={catalogCategories}
-              categorizedIds={categorizedIds}
-              selectedCategory={activeCategoryId}
-              onSelectCategory={handleCategoryChange}
-            />
-          )}
-          {showTypeSelector && (
-            <CatalogTypeSelector
-              catalogTypes={catalogTypes}
-              catalogTypeCounts={catalogTypeCounts}
-            />
-          )}
-          {showFilters && (
-            <CatalogFilters
-              activeFilters={activeFilters}
-              filterGroupCounts={filterGroupCounts}
-              filterGroupMap={filterGroupMap}
-              filterGroupsShowAll={filterGroupsShowAll}
-              onShowAllToggle={handleShowAllToggle}
-              onFilterChange={handleFilterChange}
-            />
-          )}
-        </div>
-      )}
-      <div className="co-catalog-page__content">
-        <CatalogToolbar
-          ref={catalogToolbarRef}
-          title={activeCategory.label}
-          totalItems={totalItems}
-          searchKeyword={activeSearchKeyword}
-          sortOrder={sortOrder}
-          groupings={groupings}
-          activeGrouping={activeGrouping}
-          onGroupingChange={handleGroupingChange}
-          onSortOrderChange={handleSortOrderChange}
-          onSearchKeywordChange={handleSearchKeywordChange}
-        />
-        {totalItems > 0 ? (
-          <CatalogGrid items={catalogItems} renderTile={renderTile} isGrouped={isGrouped} />
-        ) : (
-          <CatalogEmptyState onClear={clearFilters} />
+    <PaneBody>
+      <CatalogPage>
+        {showSidebar && (
+          <CatalogPageTabs>
+            {showCategories && (
+              <CatalogCategories
+                categories={catalogCategories}
+                categorizedIds={categorizedIds}
+                selectedCategory={activeCategoryId}
+                onSelectCategory={handleCategoryChange}
+              />
+            )}
+            {showTypeSelector && (
+              <CatalogTypeSelector
+                catalogTypes={catalogTypes}
+                catalogTypeCounts={catalogTypeCounts}
+              />
+            )}
+            {showFilters && (
+              <CatalogFilters
+                activeFilters={activeFilters}
+                filterGroupCounts={filterGroupCounts}
+                filterGroupMap={filterGroupMap}
+                filterGroupsShowAll={filterGroupsShowAll}
+                onShowAllToggle={handleShowAllToggle}
+                onFilterChange={handleFilterChange}
+                sortFilterGroups={sortFilterGroups}
+              />
+            )}
+          </CatalogPageTabs>
         )}
-      </div>
-    </div>
+        <CatalogPageContent>
+          <CatalogToolbar
+            ref={catalogToolbarRef}
+            title={activeCategory.label}
+            totalItems={totalItems}
+            searchKeyword={activeSearchKeyword}
+            // sortOrder={sortOrder}
+            groupings={groupings}
+            activeGrouping={activeGrouping}
+            onGroupingChange={handleGroupingChange}
+            // onSortOrderChange={handleSortOrderChange}
+            onSearchKeywordChange={handleSearchKeywordChange}
+          />
+          {totalItems > 0 ? (
+            <CatalogGrid items={catalogItems} renderTile={renderTile} isGrouped={isGrouped} />
+          ) : (
+            <CatalogEmptyState onClear={clearFilters} />
+          )}
+        </CatalogPageContent>
+      </CatalogPage>
+    </PaneBody>
   );
 };
 

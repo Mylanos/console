@@ -19,7 +19,7 @@ import { FLAG_PIPELINES_OPERATOR_VERSION_1_17_OR_NEWER } from '../const';
 import { STATUS_KEY_NAME_ERROR, UpdateOperationType } from './const';
 import { sanitizeToForm, sanitizeToYaml } from './form-switcher-validation';
 import { useExplicitPipelineTaskTouch, useFormikFetchAndSaveTasks } from './hooks';
-import { removeTaskModal } from './modals';
+import { useRemoveTaskModal } from './modals/remove-task';
 import PipelineBuilderFormEditor from './PipelineBuilderFormEditor';
 import PipelineBuilderHeader from './PipelineBuilderHeader';
 import TaskSidebar from './task-sidebar/TaskSidebar';
@@ -127,6 +127,7 @@ const PipelineBuilderForm: React.FC<PipelineBuilderFormProps> = (props) => {
   }, [handleReset]);
 
   const LAST_VIEWED_EDITOR_TYPE_USERSETTING_KEY = 'pipeline.pipelineBuilderForm.editor.lastView';
+  const removeTaskModal = useRemoveTaskModal();
 
   const formEditor = (
     <PipelineBuilderFormEditor
@@ -204,14 +205,9 @@ const PipelineBuilderForm: React.FC<PipelineBuilderFormProps> = (props) => {
             <PipelineBuilderHeader namespace={namespace} />
             <FlexForm className="opp-pipeline-builder-form" onSubmit={handleSubmit}>
               <div className="opp-pipeline-builder-form__content">
-                <FormBody
-                  flexLayout
-                  disablePaneBody
-                  className="co-m-pane__body co-m-pane__body--no-top-margin"
-                >
+                <FormBody flexLayout disablePaneBody className="pf-v6-c-page__main-section">
                   <PipelineQuickSearch
                     namespace={namespace}
-                    viewContainer={contentRef.current}
                     isOpen={menuOpen}
                     callback={savedCallback.current}
                     setIsOpen={(open) => setMenuOpen(open)}

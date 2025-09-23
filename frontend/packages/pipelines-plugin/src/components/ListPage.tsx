@@ -1,21 +1,19 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
-import { Button, TextInput, TextInputProps } from '@patternfly/react-core';
-import * as classNames from 'classnames';
+import { Button, Grid, GridItem, TextInput, TextInputProps } from '@patternfly/react-core';
+import { SimpleDropdown } from '@patternfly/react-templates';
 // eslint-disable-next-line no-restricted-imports
 import * as _ from 'lodash-es';
 import { useTranslation } from 'react-i18next';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useDispatch } from 'react-redux';
 import { Link, useParams, useNavigate } from 'react-router-dom-v5-compat';
 import { ColumnLayout } from '@console/dynamic-plugin-sdk';
 import { filterList } from '@console/dynamic-plugin-sdk/src/app/k8s/actions/k8s';
+import { ListPageHeader } from '@console/dynamic-plugin-sdk/src/lib-core';
 import { ErrorPage404 } from '@console/internal/components/error';
 import { FilterToolbar, RowFilter } from '@console/internal/components/filter-toolbar';
 import { storagePrefix } from '@console/internal/components/row-filter';
 import {
-  Dropdown,
   FirehoseResource,
   FirehoseResourcesResult,
   FirehoseResultObject,
@@ -23,7 +21,6 @@ import {
   kindObj,
   makeQuery,
   makeReduxID,
-  PageHeading,
   RequireCreatePermission,
 } from '@console/internal/components/utils';
 import {
@@ -34,6 +31,7 @@ import {
 } from '@console/internal/module/k8s';
 import { useDocumentListener, KEYBOARD_SHORTCUTS, useDeepCompareMemoize } from '@console/shared';
 import { withFallback, ErrorBoundaryFallbackPage } from '@console/shared/src/components/error';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import ListPropProvider from './ListPropProvider';
 
 type CreateProps = {
@@ -50,27 +48,19 @@ type CreateProps = {
 
 type TextFilterProps = Omit<TextInputProps, 'type' | 'tabIndex'> & {
   label?: string;
-  parentClassName?: string;
 };
 
 export const TextFilter: React.FC<TextFilterProps> = (props) => {
-  const {
-    label,
-    className,
-    placeholder,
-    autoFocus = false,
-    parentClassName,
-    ...otherInputProps
-  } = props;
+  const { label, placeholder, autoFocus = false, ...otherInputProps } = props;
   const { ref } = useDocumentListener<HTMLInputElement>();
   const { t } = useTranslation();
   const placeholderText = placeholder ?? t('public~Filter {{label}}...', { label });
 
   return (
-    <div className={classNames('has-feedback', parentClassName)}>
+    <div className="co-text-filter">
       <TextInput
         {...otherInputProps}
-        className={classNames('co-text-filter', className)}
+        className="co-text-filter__text-input"
         data-test-id="item-filter"
         aria-label={placeholderText}
         placeholder={placeholderText}
@@ -79,7 +69,7 @@ export const TextFilter: React.FC<TextFilterProps> = (props) => {
         tabIndex={0}
         type="text"
       />
-      <span className="co-text-filter-feedback">
+      <span className="co-text-filter__feedback">
         <kbd className="co-kbd co-kbd__filter-input">{KEYBOARD_SHORTCUTS.focusFilterInput}</kbd>
       </span>
     </div>
@@ -158,11 +148,11 @@ export const ListPageWrapper: React.FC<ListPageWrapperProps> = (props) => {
   return (
     <div>
       {!_.isEmpty(dta) && Filter}
-      <div className="row">
-        <div className="col-xs-12">
+      <Grid>
+        <GridItem>
           <ListComponent {...props} data={dta} />
-        </div>
-      </div>
+        </GridItem>
+      </Grid>
     </div>
   );
 };
@@ -272,7 +262,7 @@ export const FireMan: React.FC<FireManProps & { filterList?: typeof filterList }
   if (canCreate) {
     if (createProps.to) {
       createLink = (
-        <Link className="co-m-primary-action" to={createProps.to}>
+        <Link to={createProps.to}>
           <Button variant="primary" id="yaml-create" data-test="item-create">
             {createButtonText}
           </Button>
@@ -280,22 +270,27 @@ export const FireMan: React.FC<FireManProps & { filterList?: typeof filterList }
       );
     } else if (createProps.items) {
       createLink = (
-        <div className="co-m-primary-action">
-          <Dropdown
-            buttonClassName="pf-m-primary"
-            id="item-create"
-            dataTest="item-create"
-            menuClassName={classNames({ 'pf-m-align-right-on-md': title })}
-            title={createButtonText}
-            noSelection
-            items={createProps.items}
-            onChange={runOrNavigate}
+        <div>
+          <SimpleDropdown
+            toggleProps={{
+              variant: 'primary',
+              id: 'item-create',
+              // @ts-expect-error non-prop attribute is used for cypress
+              'data-test': 'item-create',
+            }}
+            toggleContent={createButtonText}
+            initialItems={Object.keys(createProps.items).map((item) => ({
+              value: item,
+              content: createProps.items[item],
+              'data-test-dropdown-menu': item,
+            }))}
+            onSelect={(_e, value: string) => runOrNavigate(value)}
           />
         </div>
       );
     } else {
       createLink = (
-        <div className="co-m-primary-action">
+        <div>
           <Button variant="primary" id="yaml-create" data-test="item-create" {...createProps}>
             {createButtonText}
           </Button>
@@ -316,28 +311,17 @@ export const FireMan: React.FC<FireManProps & { filterList?: typeof filterList }
 
   return (
     <>
-      {/* Badge rendered from PageHeading only when title is present */}
-      <PageHeading
-        title={title}
-        badge={title ? badge : null}
-        className={classNames({ 'co-m-nav-title--row': createLink })}
-      >
-        {createLink && (
-          <div className={classNames({ 'co-m-pane__createLink--no-title': !title })}>
-            {createLink}
-          </div>
-        )}
-        {!title && badge && <div>{badge}</div>}
-      </PageHeading>
-      {helpText && <p className="co-m-pane__help-text co-help-text">{helpText}</p>}
-      <div className="co-m-pane__body co-m-pane__body--no-top-margin">
+      <ListPageHeader title={title} badge={badge} helpText={helpText}>
+        {createLink}
+      </ListPageHeader>
+      <PaneBody>
         {inject(props.children, {
           resources,
           expand,
           reduxIDs,
           applyFilter,
         })}
-      </div>
+      </PaneBody>
     </>
   );
 };

@@ -60,7 +60,7 @@ When('user clicks on Types dropdown', () => {
 });
 
 When('user selects {string} from Types dropdown', (typeName: string) => {
-  cy.contains('[data-test-id="dropdown-menu"]', typeName).click();
+  cy.contains('[data-test="console-select-item"]', typeName).click();
 });
 
 When('user enters {string} in the Filter field', (filterCriteria: string) => {
@@ -258,7 +258,7 @@ When('user clicks on Pod dropdown', () => {
 });
 
 When('user selects {string} option from the dropdown', (workloadName: string) => {
-  cy.contains('button[role="option"]', workloadName).click();
+  cy.contains('[data-test="console-select-item"]', workloadName).click();
 });
 
 When('user selects the first option from the dropdown', () => {
@@ -272,7 +272,7 @@ When('user clicks on Inspect on {string} chart', (chartTitle: string) => {
 });
 
 Then('user will see Metrics tab in Observe page', () => {
-  cy.get('.co-m-horizontal-nav-item--active').find(monitoringPO.tabs.metrics).should('be.visible');
+  cy.get('.pf-v6-c-tabs__item.pf-m-current').find(monitoringPO.tabs.metrics).should('be.visible');
 });
 
 Then('{string} option selected by default', (metric) => {

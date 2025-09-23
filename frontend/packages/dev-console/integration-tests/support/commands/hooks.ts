@@ -1,4 +1,3 @@
-import { guidedTour } from '@console/cypress-integration-tests/views/guided-tour';
 import { quickStartSidebarPO } from '../pageObjects/quickStarts-po';
 
 //  To ignore the resizeObserverLoopErrors on CI, adding below code
@@ -19,7 +18,7 @@ before(() => {
   const bridgePasswordPassword: string = Cypress.env('BRIDGE_HTPASSWD_PASSWORD') || 'test';
   cy.login(bridgePasswordIDP, bridgePasswordUsername, bridgePasswordPassword);
   cy.document().its('readyState').should('eq', 'complete');
-  guidedTour.close();
+  // checkDeveloperPerspective();
 });
 
 after(() => {
@@ -28,7 +27,7 @@ after(() => {
 });
 
 beforeEach(() => {
-  cy.initDeveloper();
+  cy.initAdmin();
 });
 
 afterEach(() => {

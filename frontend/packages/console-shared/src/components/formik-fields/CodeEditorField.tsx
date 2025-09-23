@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { Button } from '@patternfly/react-core';
-import { InfoCircleIcon } from '@patternfly/react-icons/dist/esm/icons/info-circle-icon';
+import { css } from '@patternfly/react-styles';
 import { FormikValues, useField, useFormikContext } from 'formik';
 import { isEmpty } from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +14,7 @@ import { useK8sWatchResource } from '@console/internal/components/utils/k8s-watc
 import { ConsoleYAMLSampleModel } from '@console/internal/models';
 import { getYAMLTemplates } from '@console/internal/models/yaml-templates';
 import { definitionFor, K8sResourceCommon, referenceForModel } from '@console/internal/module/k8s';
+import { ToggleSidebarButton } from '@console/shared/src/components/editor/ToggleSidebarButton';
 import { getResourceSidebarSamples } from '../../utils';
 import { CodeEditorFieldProps } from './field-types';
 
@@ -32,7 +32,7 @@ const CodeEditorField: React.FC<CodeEditorFieldProps> = ({
   schema,
   showSamples,
   showShortcuts,
-  showMiniMap,
+  isMinimapVisible,
   minHeight,
   onSave,
   language,
@@ -80,49 +80,50 @@ const CodeEditorField: React.FC<CodeEditorFieldProps> = ({
   );
 
   return (
-    <div className="osc-yaml-editor" data-test="yaml-editor">
-      <div className="osc-yaml-editor__editor">
-        <AsyncComponent
-          loader={() => import('../editor/CodeEditor').then((c) => c.default)}
-          forwardRef={editorRef}
-          value={field.value}
-          minHeight={minHeight ?? '200px'}
-          onChange={(yaml: string) => setFieldValue(name, yaml)}
-          onSave={onSave}
-          showShortcuts={showShortcuts}
-          showMiniMap={showMiniMap}
-          language={language}
-          toolbarLinks={
-            !sidebarOpen &&
-            hasSidebarContent && [
-              <Button
-                icon={
-                  <InfoCircleIcon className="co-icon-space-r co-p-has-sidebar__sidebar-link-icon" />
-                }
-                isInline
-                variant="link"
-                onClick={() => setSidebarOpen(true)}
-              >
-                {t('console-shared~View sidebar')}
-              </Button>,
-            ]
-          }
-        />
-      </div>
-      {sidebarOpen && hasSidebarContent && (
-        <div className="osc-yaml-editor__sidebar">
+    <div className="osc-yaml-editor co-p-has-sidebar" data-test="yaml-editor">
+      <div
+        className={css('co-p-has-sidebar__body', {
+          'co-p-has-sidebar__body--sidebar-open': sidebarOpen && hasSidebarContent,
+        })}
+      >
+        <div className="osc-yaml-editor__editor">
           <AsyncComponent
-            loader={() => import('../editor/CodeEditorSidebar').then((c) => c.default)}
-            editorRef={editorRef}
-            model={model}
-            schema={schema}
-            samples={showSamples ? samples : []}
-            snippets={snippets}
-            sanitizeYamlContent={sanitizeYamlContent}
-            sidebarLabel={label}
-            toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            loader={() => import('../editor/CodeEditor').then((c) => c.default)}
+            forwardRef={editorRef}
+            value={field.value}
+            minHeight={minHeight ?? '200px'}
+            onChange={(yaml: string) => setFieldValue(name, yaml)}
+            onSave={onSave}
+            showShortcuts={showShortcuts}
+            isMinimapVisible={isMinimapVisible}
+            language={language}
+            toolbarLinks={[
+              hasSidebarContent && (
+                <ToggleSidebarButton
+                  key="toggle-sidebar"
+                  id="showSidebar"
+                  isSidebarOpen={sidebarOpen}
+                  toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+                  alignToEnd
+                  className="pf-v6-u-mr-xs"
+                />
+              ),
+            ]}
           />
         </div>
+      </div>
+      {sidebarOpen && hasSidebarContent && (
+        <AsyncComponent
+          loader={() => import('../editor/CodeEditorSidebar').then((c) => c.default)}
+          editorRef={editorRef}
+          model={model}
+          schema={schema}
+          samples={showSamples ? samples : []}
+          snippets={snippets}
+          sanitizeYamlContent={sanitizeYamlContent}
+          sidebarLabel={label}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        />
       )}
     </div>
   );

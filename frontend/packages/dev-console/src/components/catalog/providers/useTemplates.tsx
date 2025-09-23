@@ -1,11 +1,11 @@
-import * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TFunction } from 'i18next';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { ExtensionHook, CatalogItem } from '@console/dynamic-plugin-sdk';
 import {
-  getImageForIconClass,
   getTemplateIcon,
+  getTemplateIconClass,
 } from '@console/internal/components/catalog/catalog-item-icon';
 import { TemplateModel } from '@console/internal/models';
 import { k8sListPartialMetadata, PartialObjectMetadata } from '@console/internal/module/k8s';
@@ -29,9 +29,8 @@ const normalizeTemplates = (
 
       const displayName = annotations[ANNOTATIONS.displayName] || name;
       const provider = annotations[ANNOTATIONS.providerDisplayName];
-      const icon = getTemplateIcon(template);
-      const imgUrl = getImageForIconClass(icon);
-      const iconClass = imgUrl ? null : icon;
+      const imgURL = getTemplateIcon(template);
+      const iconClass = getTemplateIconClass(template);
       const documentationUrl = annotations[ANNOTATIONS.documentationURL];
       const supportUrl = annotations[ANNOTATIONS.supportURL];
 
@@ -47,7 +46,7 @@ const normalizeTemplates = (
         documentationUrl,
         icon: {
           class: iconClass,
-          url: imgUrl,
+          url: imgURL,
         },
         cta: {
           label: t('devconsole~Instantiate Template'),
@@ -70,18 +69,18 @@ const useTemplates: ExtensionHook<CatalogItem<PartialObjectMetadata>[]> = ({
   namespace,
 }): [CatalogItem[], boolean, any] => {
   const { t } = useTranslation();
-  const [templates, setTemplates] = React.useState<PartialObjectMetadata[]>([]);
-  const [templatesLoaded, setTemplatesLoaded] = React.useState<boolean>(false);
-  const [templatesError, setTemplatesError] = React.useState<APIError>();
+  const [templates, setTemplates] = useState<PartialObjectMetadata[]>([]);
+  const [templatesLoaded, setTemplatesLoaded] = useState<boolean>(false);
+  const [templatesError, setTemplatesError] = useState<APIError>();
 
-  const [projectTemplates, setProjectTemplates] = React.useState<PartialObjectMetadata[]>([]);
-  const [projectTemplatesLoaded, setProjectTemplatesLoaded] = React.useState<boolean>(false);
-  const [projectTemplatesError, setProjectTemplatesError] = React.useState<APIError>();
+  const [projectTemplates, setProjectTemplates] = useState<PartialObjectMetadata[]>([]);
+  const [projectTemplatesLoaded, setProjectTemplatesLoaded] = useState<boolean>(false);
+  const [projectTemplatesError, setProjectTemplatesError] = useState<APIError>();
 
   // Load templates from the shared `openshift` namespace. Don't use Firehose
   // for templates so that we can request only metadata. This keeps the request
   // much smaller.
-  React.useEffect(() => {
+  useEffect(() => {
     k8sListPartialMetadata(TemplateModel, { ns: 'openshift' })
       .then((metadata) => {
         setTemplates(metadata ?? []);
@@ -92,7 +91,7 @@ const useTemplates: ExtensionHook<CatalogItem<PartialObjectMetadata>[]> = ({
   }, []);
 
   // Load templates for the current project.
-  React.useEffect(() => {
+  useEffect(() => {
     // Don't load templates from the `openshift` namespace twice if it's the current namespace
     if (!namespace || namespace === 'openshift') {
       setProjectTemplates([]);
@@ -113,7 +112,7 @@ const useTemplates: ExtensionHook<CatalogItem<PartialObjectMetadata>[]> = ({
 
   const error = templatesError || projectTemplatesError;
 
-  const normalizedTemplates = React.useMemo(
+  const normalizedTemplates = useMemo(
     () => normalizeTemplates([...templates, ...projectTemplates], namespace, t),
     [namespace, projectTemplates, t, templates],
   );

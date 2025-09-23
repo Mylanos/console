@@ -1,17 +1,33 @@
-import * as React from 'react';
 import { configure, render } from '@testing-library/react';
+import { useLocation } from 'react-router';
 import {
   IncompleteDataError,
   TimeoutError,
 } from '@console/dynamic-plugin-sdk/src/utils/error/http-error';
+import { useFavoritesOptions } from '@console/internal/components/useFavoritesOptions';
 import { StatusBox } from '..';
 
 configure({ testIdAttribute: 'data-test' });
 
+jest.mock('react-router-dom-v5-compat', () => ({
+  useNavigate: jest.fn(),
+}));
+
+jest.mock('react-router', () => ({
+  useLocation: jest.fn(),
+}));
+const useFavoritesOptionsMock = useFavoritesOptions as jest.Mock;
+jest.mock('@console/internal/components/useFavoritesOptions', () => ({
+  useFavoritesOptions: jest.fn(),
+}));
+const useLocationMock = useLocation as jest.Mock;
+
 describe('StatusBox', () => {
-  it('should render 404: Not Found if the loadError status is 404', () => {
+  it('should render 404: Page Not Found if the loadError status is 404', () => {
+    useLocationMock.mockReturnValue({ pathname: '' });
+    useFavoritesOptionsMock.mockReturnValue([[], jest.fn(), true]);
     const { getByText } = render(<StatusBox loadError={{ response: { status: 404 } }} />);
-    getByText('404: Not Found');
+    getByText('404: Page Not Found');
   });
 
   it('should render access denied info together with the error message', () => {

@@ -1,13 +1,11 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 import * as React from 'react';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom-v5-compat';
-import { sortable } from '@patternfly/react-table';
+import { sortable, Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 import { Trans, useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
-import * as classNames from 'classnames';
+import { css } from '@patternfly/react-styles';
 import * as _ from 'lodash-es';
 import {
   Button,
@@ -21,6 +19,10 @@ import {
   CardTitle,
   Content,
   ContentVariants,
+  DescriptionList,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  DescriptionListDescription,
 } from '@patternfly/react-core';
 import {
   Status,
@@ -38,6 +40,7 @@ import {
   COLUMN_MANAGEMENT_LOCAL_STORAGE_KEY,
 } from '@console/shared/src/constants/common';
 import { ListPageBody, RowFilter, RowProps, TableColumn } from '@console/dynamic-plugin-sdk';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import * as UIActions from '../actions/ui';
 import { coFetchJSON } from '../co-fetch';
 import {
@@ -79,7 +82,6 @@ import {
   ResourceSummary,
   ScrollToTopOnMount,
   SectionHeading,
-  Timestamp,
   formatBytesAsMiB,
   formatCores,
   humanizeBinaryBytes,
@@ -90,6 +92,7 @@ import {
   LabelList,
   RuntimeClass,
 } from './utils';
+import { Timestamp } from '@console/shared/src/components/datetime/Timestamp';
 import { PodLogs } from './pod-logs';
 import {
   Area,
@@ -119,6 +122,7 @@ import { sortResourceByValue } from './factory/Table/sort';
 import { useActiveColumns } from './factory/Table/active-columns-hook';
 import { PodDisruptionBudgetField } from '@console/app/src/components/pdb/PodDisruptionBudgetField';
 import { PodTraffic } from './pod-traffic';
+import { RootState } from '../redux';
 // Only request metrics if the device's screen width is larger than the
 // breakpoint where metrics are visible.
 const showMetrics =
@@ -152,12 +156,12 @@ const fetchPodMetrics = (namespace: string): Promise<UIActions.PodMetrics> => {
       });
     },
   );
-  return Promise.all(promises).then((data: any[]) => _.assign({}, ...data));
+  return Promise.all(promises).then((data: unknown[]) => _.assign({}, ...data));
 };
 
 export const menuActions = [
-  ...Kebab.getExtensionsActionsForKind(PodModel),
-  ...Kebab.factory.common,
+  ...(Kebab.getExtensionsActionsForKind(PodModel) || []),
+  ...(Kebab.factory.common || []),
 ];
 
 // t('public~Name')
@@ -190,12 +194,12 @@ const podColumnInfo = Object.freeze({
     title: 'public~Status',
   },
   ready: {
-    classes: classNames('pf-m-nowrap', 'pf-v6-u-w-10-on-lg', 'pf-v6-u-w-8-on-xl'),
+    classes: css('pf-m-nowrap', 'pf-v6-u-w-10-on-lg', 'pf-v6-u-w-8-on-xl'),
     id: 'ready',
     title: 'public~Ready',
   },
   restarts: {
-    classes: classNames('pf-m-nowrap', 'pf-v6-u-w-8-on-2xl'),
+    classes: css('pf-m-nowrap', 'pf-v6-u-w-8-on-2xl'),
     id: 'restarts',
     title: 'public~Restarts',
   },
@@ -210,17 +214,17 @@ const podColumnInfo = Object.freeze({
     title: 'public~Node',
   },
   memory: {
-    classes: classNames({ 'pf-v6-u-w-10-on-2xl': showMetrics }),
+    classes: css({ 'pf-v6-u-w-10-on-2xl': showMetrics }),
     id: 'memory',
     title: 'public~Memory',
   },
   cpu: {
-    classes: classNames({ 'pf-v6-u-w-10-on-2xl': showMetrics }),
+    classes: css({ 'pf-v6-u-w-10-on-2xl': showMetrics }),
     id: 'cpu',
     title: 'public~CPU',
   },
   created: {
-    classes: classNames('pf-v6-u-w-10-on-2xl'),
+    classes: css('pf-v6-u-w-10-on-2xl'),
     id: 'created',
     title: 'public~Created',
   },
@@ -359,13 +363,13 @@ const PodTableRow: React.FC<RowProps<PodKind, PodRowData>> = ({
 }) => {
   const { t } = useTranslation();
   const { name, namespace, creationTimestamp, labels } = pod.metadata;
-  const bytes: number = useSelector(({ UI }) => {
+  const bytes = useSelector<RootState, number>(({ UI }) => {
     const metrics = UI.getIn(['metrics', 'pod']);
-    return metrics?.memory?.[namespace]?.[name];
+    return metrics?.memory?.[namespace || '']?.[name || ''];
   });
-  const cores: number = useSelector(({ UI }) => {
+  const cores = useSelector<RootState, number>(({ UI }) => {
     const metrics = UI.getIn(['metrics', 'pod']);
-    return metrics?.cpu?.[namespace]?.[name];
+    return metrics?.cpu?.[namespace || '']?.[name || ''];
   });
   const { readyCount, totalContainers } = podReadiness(pod);
   const phase = podPhase(pod);
@@ -382,7 +386,7 @@ const PodTableRow: React.FC<RowProps<PodKind, PodRowData>> = ({
         <ResourceLink kind={kind} name={name} namespace={namespace} />
       </TableData>
       <TableData
-        className={classNames(podColumnInfo.namespace.classes, 'co-break-word')}
+        className={css(podColumnInfo.namespace.classes, 'co-break-word')}
         activeColumnIDs={activeColumnIDs}
         id={podColumnInfo.namespace.id}
       >
@@ -453,7 +457,7 @@ const PodTableRow: React.FC<RowProps<PodKind, PodRowData>> = ({
         activeColumnIDs={activeColumnIDs}
         id={podColumnInfo.labels.id}
       >
-        <LabelList kind={kind} labels={labels} />
+        <LabelList kind={kind} labels={labels || {}} />
       </TableData>
       <TableData
         className={podColumnInfo.ipaddress.classes}
@@ -467,7 +471,7 @@ const PodTableRow: React.FC<RowProps<PodKind, PodRowData>> = ({
         activeColumnIDs={activeColumnIDs}
         id={podColumnInfo.traffic.id}
       >
-        <PodTraffic podName={name} namespace={namespace} />
+        <PodTraffic podName={name || ''} namespace={namespace || ''} />
       </TableData>
       <TableData className={Kebab.columnClass} activeColumnIDs={activeColumnIDs} id="">
         <LazyActionMenu context={context} isDisabled={phase === 'Terminating'} />
@@ -537,17 +541,6 @@ export const ContainerLastState: React.FC<ContainerLastStateProps> = ({ containe
   return <>-</>;
 };
 
-const podContainerClassNames = [
-  'col-lg-2 col-md-3 col-sm-4 col-xs-5',
-  'col-lg-2 col-md-3 col-sm-5 col-xs-7 ',
-  'col-lg-2 col-md-1 col-sm-3 hidden-xs',
-  'col-lg-2 hidden-md hidden-sm hidden-xs',
-  'col-lg-1 col-md-2 hidden-sm hidden-xs',
-  'col-lg-1 col-md-2 hidden-sm hidden-xs',
-  'col-lg-1 hidden-md hidden-sm hidden-xs',
-  'col-lg-1 hidden-md hidden-sm hidden-xs',
-];
-
 export const ContainerRow: React.FC<ContainerRowProps> = ({ pod, container }) => {
   const cstatus = getContainerStatus(pod, container.name);
   const cstate = getContainerState(cstatus);
@@ -555,28 +548,28 @@ export const ContainerRow: React.FC<ContainerRowProps> = ({ pod, container }) =>
   const finishedAt = _.get(cstate, 'finishedAt');
 
   return (
-    <div className="row">
-      <div className={podContainerClassNames[0]}>
+    <Tr>
+      <Td width={20}>
         <ContainerLink pod={pod} name={container.name} />
-      </div>
-      <div className={`${podContainerClassNames[1]} co-truncate co-nowrap co-select-to-copy`}>
+      </Td>
+      <Td className="co-select-to-copy" modifier="truncate">
         {container.image || '-'}
-      </div>
-      <div className={podContainerClassNames[2]}>
+      </Td>
+      <Td visibility={['hidden', 'visibleOnMd']}>
         <Status status={cstate.label} />
-      </div>
-      <div className={podContainerClassNames[3]}>
+      </Td>
+      <Td visibility={['hidden', 'visibleOnXl']}>
         <ContainerLastState containerLastState={cstatus?.lastState} />
-      </div>
-      <div className={podContainerClassNames[4]}>{getContainerRestartCount(cstatus)}</div>
-      <div className={podContainerClassNames[5]}>
+      </Td>
+      <Td visibility={['hidden', 'visibleOnLg']}>{getContainerRestartCount(cstatus)}</Td>
+      <Td width={10} visibility={['hidden', 'visibleOnLg']}>
         <Timestamp timestamp={startedAt} />
-      </div>
-      <div className={podContainerClassNames[6]}>
+      </Td>
+      <Td width={10} visibility={['hidden', 'visibleOnXl']}>
         <Timestamp timestamp={finishedAt} />
-      </div>
-      <div className={podContainerClassNames[7]}>{_.get(cstate, 'exitCode', '-')}</div>
-    </div>
+      </Td>
+      <Td visibility={['hidden', 'visibleOnXl']}>{_.get(cstate, 'exitCode', '-')}</Td>
+    </Tr>
   );
 };
 ContainerRow.displayName = 'ContainerRow';
@@ -590,23 +583,29 @@ export const PodContainerTable: React.FC<PodContainerTableProps> = ({
   return (
     <>
       <SectionHeading text={heading} />
-      <div className="co-m-table-grid co-m-table-grid--bordered">
-        <div className="row co-m-table-grid__head">
-          <div className={podContainerClassNames[0]}>{t('public~Name')}</div>
-          <div className={podContainerClassNames[1]}>{t('public~Image')}</div>
-          <div className={podContainerClassNames[2]}>{t('public~State')}</div>
-          <div className={podContainerClassNames[3]}>{t('public~Last State')}</div>
-          <div className={podContainerClassNames[4]}>{t('public~Restarts')}</div>
-          <div className={podContainerClassNames[5]}>{t('public~Started')}</div>
-          <div className={podContainerClassNames[6]}>{t('public~Finished')}</div>
-          <div className={podContainerClassNames[7]}>{t('public~Exit code')}</div>
-        </div>
-        <div className="co-m-table-grid__body">
-          {containers.map((c: any, i: number) => (
+      <Table gridBreakPoint="">
+        <Thead>
+          <Tr>
+            <Th width={20}>{t('public~Name')}</Th>
+            <Th>{t('public~Image')}</Th>
+            <Th visibility={['hidden', 'visibleOnMd']}>{t('public~State')}</Th>
+            <Th visibility={['hidden', 'visibleOnXl']}>{t('public~Last State')}</Th>
+            <Th visibility={['hidden', 'visibleOnLg']}>{t('public~Restarts')}</Th>
+            <Th width={10} visibility={['hidden', 'visibleOnLg']}>
+              {t('public~Started')}
+            </Th>
+            <Th width={10} visibility={['hidden', 'visibleOnXl']}>
+              {t('public~Finished')}
+            </Th>
+            <Th visibility={['hidden', 'visibleOnXl']}>{t('public~Exit code')}</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {containers.map((c: ContainerSpec, i: number) => (
             <ContainerRow key={i} pod={pod} container={c} />
           ))}
-        </div>
-      </div>
+        </Tbody>
+      </Table>
     </>
   );
 };
@@ -737,7 +736,7 @@ export const PodStatus: React.FC<PodStatusProps> = ({ pod }) => {
   if (status === 'Pending' && unschedulableCondition) {
     return (
       <PodStatusPopover
-        bodyContent={unschedulableCondition.message}
+        bodyContent={unschedulableCondition.message || ''}
         headerContent={t('public~Pod unschedulable')}
         status={status}
       />
@@ -797,7 +796,7 @@ export const PodStatus: React.FC<PodStatusProps> = ({ pod }) => {
     return (
       <PodStatusPopover
         headerContent={headerTitle}
-        bodyContent={containerStatusStateWaiting.state.waiting.message}
+        bodyContent={containerStatusStateWaiting.state?.waiting?.message || ''}
         footerContent={footerLinks}
         status={status}
       />
@@ -812,11 +811,13 @@ export const PodDetailsList: React.FC<PodDetailsListProps> = ({ pod }) => {
   const moreThanOnePodIPs = pod.status?.podIPs?.length > 1;
   const moreThanOneHostIPs = pod.status?.hostIPs?.length > 1;
   return (
-    <dl className="co-m-pane__details">
-      <dt>{t('public~Status')}</dt>
-      <dd>
-        <PodStatus pod={pod} />
-      </dd>
+    <DescriptionList>
+      <DescriptionListGroup>
+        <DescriptionListTerm>{t('public~Status')}</DescriptionListTerm>
+        <DescriptionListDescription>
+          <PodStatus pod={pod} />
+        </DescriptionListDescription>
+      </DescriptionListGroup>
       <DetailsItem label={t('public~Restart policy')} obj={pod} path="spec.restartPolicy">
         {getRestartPolicyLabel(pod)}
       </DetailsItem>
@@ -835,8 +836,8 @@ export const PodDetailsList: React.FC<PodDetailsListProps> = ({ pod }) => {
         path={moreThanOnePodIPs ? 'status.podIPs' : 'status.podIP'}
       >
         {moreThanOnePodIPs
-          ? pod.status.podIPs.map((podIP) => podIP.ip).join(', ')
-          : pod.status.podIP}
+          ? pod.status?.podIPs?.map((podIP) => podIP.ip).join(', ') || ''
+          : pod.status?.podIP || ''}
       </DetailsItem>
       <DetailsItem
         label={moreThanOneHostIPs ? t('public~Host IPs') : t('public~Host IP')}
@@ -844,11 +845,11 @@ export const PodDetailsList: React.FC<PodDetailsListProps> = ({ pod }) => {
         path={moreThanOneHostIPs ? 'status.hostIPs' : 'status.hostIP'}
       >
         {moreThanOneHostIPs
-          ? pod.status.hostIPs.map((hostIP) => hostIP.ip).join(', ')
-          : pod.status.hostIP}
+          ? pod.status?.hostIPs?.map((hostIP) => hostIP.ip).join(', ') || ''
+          : pod.status?.hostIP || ''}
       </DetailsItem>
       <DetailsItem label={t('public~Node')} obj={pod} path="spec.nodeName" hideEmpty>
-        <NodeLink name={pod.spec.nodeName} />
+        <NodeLink name={pod.spec.nodeName || ''} />
       </DetailsItem>
       {pod.spec.imagePullSecrets && (
         <DetailsItem label={t('public~Image pull secret')} obj={pod} path="spec.imagePullSecrets">
@@ -856,8 +857,8 @@ export const PodDetailsList: React.FC<PodDetailsListProps> = ({ pod }) => {
             <ResourceLink
               key={imagePullSecret.name}
               kind="Secret"
-              name={imagePullSecret.name}
-              namespace={pod.metadata.namespace}
+              name={imagePullSecret.name || ''}
+              namespace={pod.metadata.namespace || ''}
             />
           ))}
         </DetailsItem>
@@ -865,9 +866,9 @@ export const PodDetailsList: React.FC<PodDetailsListProps> = ({ pod }) => {
       <RuntimeClass obj={pod} path="spec.runtimeClassName" />
       <PodDisruptionBudgetField obj={pod} />
       <DetailsItem label={t('public~Receiving Traffic')} obj={pod}>
-        <PodTraffic podName={pod.metadata.name} namespace={pod.metadata.namespace} />
+        <PodTraffic podName={pod.metadata.name || ''} namespace={pod.metadata.namespace || ''} />
       </DetailsItem>
-    </dl>
+    </DescriptionList>
   );
 };
 PodDetailsList.displayName = 'PodDetailsList';
@@ -909,79 +910,81 @@ const Details: React.FC<PodDetailsProps> = ({ obj: pod }) => {
   return (
     <>
       <ScrollToTopOnMount />
-      <div className="co-m-pane__body">
+      <PaneBody>
         <SectionHeading text={t('public~Pod details')} />
-        <div className="row">
-          <div className="col-sm-6">
+        <Grid hasGutter>
+          <GridItem sm={6}>
             <PodResourceSummary pod={pod} />
-          </div>
-          <div className="col-sm-6">
+          </GridItem>
+          <GridItem sm={6}>
             <PodDetailsList pod={pod} />
-          </div>
-        </div>
-      </div>
+          </GridItem>
+        </Grid>
+      </PaneBody>
       {pod.spec.initContainers && (
-        <div className="co-m-pane__body">
+        <PaneBody>
           <PodContainerTable
             key="initContainerTable"
             heading={t('public~Init containers')}
             containers={pod.spec.initContainers}
             pod={pod}
           />
-        </div>
+        </PaneBody>
       )}
-      <div className="co-m-pane__body">
+      <PaneBody>
         <PodContainerTable
           key="containerTable"
           heading={t('public~Containers')}
           containers={pod.spec.containers}
           pod={pod}
         />
-      </div>
-      <div className="co-m-pane__body">
+      </PaneBody>
+      <PaneBody>
         <VolumesTable resource={pod} heading={t('public~Volumes')} />
-      </div>
-      <div className="co-m-pane__body">
+      </PaneBody>
+      <PaneBody>
         <SectionHeading text={t('public~Conditions')} />
-        <Conditions conditions={pod.status.conditions} />
-      </div>
+        <Conditions conditions={pod.status?.conditions || []} />
+      </PaneBody>
     </>
   );
 };
 
-const EnvironmentPage = (props: any) => (
+const EnvironmentPage = (props: { obj: PodKind; envPath: string[]; readOnly: boolean }) => (
   <AsyncComponent
     loader={() => import('./environment.jsx').then((c) => c.EnvironmentPage)}
-    {...props}
+    {...(props as Record<string, unknown>)}
   />
 );
 
 const envPath = ['spec', 'containers'];
-const PodEnvironmentComponent = (props) => (
-  <EnvironmentPage obj={props.obj} rawEnvData={props.obj.spec} envPath={envPath} readOnly={true} />
+const PodEnvironmentComponent = (props: { obj: PodKind }) => (
+  <EnvironmentPage obj={props.obj} envPath={envPath} readOnly={true} />
 );
 
-export const PodExecLoader: React.FC<PodExecLoaderProps> = ({
+export const PodConnectLoader: React.FC<PodConnectLoaderProps> = ({
   obj,
   message,
   initialContainer,
   infoMessage,
+  attach = false,
 }) => (
-  <div className="co-m-pane__body">
-    <div className="row">
-      <div className="col-xs-12">
+  <PaneBody>
+    <Grid>
+      <GridItem>
         <div className="panel-body">
           <AsyncComponent
-            loader={() => import('./pod-exec').then((c) => c.PodExec)}
+            loader={() => import('./pod-connect').then((c) => c.PodConnect)}
             obj={obj}
             message={message}
             infoMessage={infoMessage}
             initialContainer={initialContainer}
+            attach={attach}
           />
         </div>
-      </div>
-    </div>
-  </div>
+      </GridItem>
+    </Grid>
+  </PaneBody>
 );
 export const PodsDetailsPage: React.FC<PodDetailsPageProps> = (props) => {
   const prometheusIsAvailable = usePrometheusGate();
@@ -1010,7 +1013,7 @@ export const PodsDetailsPage: React.FC<PodDetailsPageProps> = (props) => {
         navFactory.envEditor(PodEnvironmentComponent),
         navFactory.logs(PodLogs),
         navFactory.events(ResourceEventStream),
-        navFactory.terminal(PodExecLoader),
+        navFactory.terminal(PodConnectLoader),
       ]}
     />
   );
@@ -1019,7 +1022,7 @@ PodsDetailsPage.displayName = 'PodsDetailsPage';
 
 export const PodList: React.FC<PodListProps> = ({ showNamespaceOverride, showNodes, ...props }) => {
   const { t } = useTranslation();
-  const columns = React.useMemo(() => getColumns(showNodes, t), [showNodes, t]);
+  const columns = React.useMemo(() => getColumns(showNodes || false, t), [showNodes, t]);
   const [activeColumns, userSettingsLoaded] = useActiveColumns({
     columns,
     showNamespaceOverride,
@@ -1031,17 +1034,19 @@ export const PodList: React.FC<PodListProps> = ({ showNamespaceOverride, showNod
     }),
     [showNodes],
   );
+  if (!userSettingsLoaded) {
+    return null;
+  }
+
   return (
-    userSettingsLoaded && (
-      <VirtualizedTable<PodKind, PodRowData>
-        {...props}
-        aria-label={t('public~Pods')}
-        label={t('public~Pods')}
-        columns={activeColumns}
-        Row={PodTableRow}
-        rowData={rowData}
-      />
-    )
+    <VirtualizedTable<PodKind, PodRowData>
+      {...props}
+      aria-label={t('public~Pods')}
+      label={t('public~Pods')}
+      columns={activeColumns}
+      Row={PodTableRow}
+      rowData={rowData}
+    />
   );
 };
 PodList.displayName = 'PodList';
@@ -1099,7 +1104,7 @@ export const PodsPage: React.FC<PodPageProps> = ({
   React.useEffect(() => {
     if (showMetrics) {
       const updateMetrics = () =>
-        fetchPodMetrics(namespace)
+        fetchPodMetrics(namespace || '')
           .then((result) => dispatch(UIActions.setPodMetrics(result)))
           .catch((e) => {
             // Just log the error here. Showing a warning alert could be more annoying
@@ -1128,58 +1133,60 @@ export const PodsPage: React.FC<PodPageProps> = ({
   const filters = React.useMemo(() => getFilters(t), [t]);
 
   const [data, filteredData, onFilterChange] = useListPageFilter(pods, filters, {
-    name: { selected: [nameFilter] },
+    name: { selected: [nameFilter || ''] },
   });
   const resourceKind = referenceForModel(PodModel);
   const accessReview = {
     groupVersionKind: resourceKind,
     namespace: namespace || 'default',
   };
+  if (!userSettingsLoaded) {
+    return null;
+  }
+
   return (
-    userSettingsLoaded && (
-      <>
-        <ListPageHeader title={showTitle ? t('public~Pods') : undefined}>
-          {canCreate && (
-            <ListPageCreate groupVersionKind={resourceKind} createAccessReview={accessReview}>
-              {t('public~Create Pod')}
-            </ListPageCreate>
-          )}
-        </ListPageHeader>
-        <ListPageBody>
-          <ListPageFilter
-            data={data}
-            loaded={loaded}
-            rowFilters={filters}
-            onFilterChange={onFilterChange}
-            columnLayout={{
-              columns: getColumns(showNodes, t).map((column) =>
-                _.pick(column, ['title', 'additional', 'id']),
-              ),
-              id: columnManagementID,
-              selectedColumns:
-                tableColumns?.[columnManagementID]?.length > 0
-                  ? new Set(tableColumns[columnManagementID])
-                  : null,
-              showNamespaceOverride,
-              type: t('public~Pod'),
-            }}
-            hideNameLabelFilters={hideNameLabelFilters}
-            hideLabelFilter={hideLabelFilter}
-            hideColumnManagement={hideColumnManagement}
-          />
-          <PodList
-            data={filteredData}
-            unfilteredData={pods}
-            loaded={loaded}
-            loadError={loadError}
-            showNamespaceOverride={showNamespaceOverride}
-            showNodes={showNodes}
-            namespace={namespace}
-            mock={mock}
-          />
-        </ListPageBody>
-      </>
-    )
+    <>
+      <ListPageHeader title={showTitle ? t('public~Pods') : ''}>
+        {canCreate && (
+          <ListPageCreate groupVersionKind={resourceKind} createAccessReview={accessReview}>
+            {t('public~Create Pod')}
+          </ListPageCreate>
+        )}
+      </ListPageHeader>
+      <ListPageBody>
+        <ListPageFilter
+          data={data}
+          loaded={loaded}
+          rowFilters={filters}
+          onFilterChange={onFilterChange}
+          columnLayout={{
+            columns: getColumns(showNodes || false, t).map((column) =>
+              _.pick(column, ['title', 'additional', 'id']),
+            ),
+            id: columnManagementID,
+            selectedColumns:
+              tableColumns?.[columnManagementID]?.length > 0
+                ? new Set(tableColumns[columnManagementID])
+                : new Set(),
+            showNamespaceOverride,
+            type: t('public~Pod'),
+          }}
+          hideNameLabelFilters={hideNameLabelFilters}
+          hideLabelFilter={hideLabelFilter}
+          hideColumnManagement={hideColumnManagement}
+        />
+        <PodList
+          data={filteredData}
+          unfilteredData={pods}
+          loaded={loaded}
+          loadError={loadError}
+          showNamespaceOverride={showNamespaceOverride}
+          showNodes={showNodes}
+          namespace={namespace}
+          mock={mock}
+        />
+      </ListPageBody>
+    </>
   );
 };
 
@@ -1189,11 +1196,11 @@ type ContainerLinkProps = {
 };
 
 type ContainerRunningSinceProps = {
-  startedAt?: string | number | Date;
+  startedAt?: string;
 };
 
 type ContainerTerminatedAtProps = {
-  finishedAt?: string | number | Date;
+  finishedAt?: string;
 };
 
 type ContainerTerminatedExitCodeProps = {
@@ -1242,11 +1249,12 @@ export type PodDetailsListProps = {
   pod: PodKind;
 };
 
-type PodExecLoaderProps = {
+type PodConnectLoaderProps = {
   obj: PodKind;
   message?: React.ReactElement;
   infoMessage?: React.ReactElement;
   initialContainer?: string;
+  attach?: boolean;
 };
 
 type PodDetailsProps = {
@@ -1261,7 +1269,7 @@ type PodListProps = {
   data: PodKind[];
   unfilteredData: PodKind[];
   loaded: boolean;
-  loadError: any;
+  loadError: unknown;
   showNodes?: boolean;
   showNamespaceOverride?: boolean;
   namespace?: string;

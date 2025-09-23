@@ -1,3 +1,4 @@
+import { checkDeveloperPerspective } from '@console/dev-console/integration-tests/support/pages/functions/checkDeveloperPerspective';
 import { checkErrors } from '../../support';
 import { detailsPage } from '../../views/details-page';
 import { guidedTour } from '../../views/guided-tour';
@@ -7,6 +8,7 @@ import { nav } from '../../views/nav';
 describe('Visiting other routes', () => {
   before(() => {
     cy.login();
+    guidedTour.close();
   });
 
   afterEach(() => {
@@ -17,13 +19,13 @@ describe('Visiting other routes', () => {
     {
       path: '/',
       waitFor: () => {
-        cy.byLegacyTestID('resource-title').should('exist');
+        cy.get('[data-test="page-heading"] h1').should('exist');
         cy.byTestID('skeleton-chart').should('not.exist');
       },
     },
     {
       path: '/k8s/cluster/clusterroles/view',
-      waitFor: () => cy.byLegacyTestID('resource-title').should('exist'),
+      waitFor: () => cy.get('[data-test="page-heading"] h1').should('exist'),
     },
     {
       path: '/k8s/cluster/nodes',
@@ -47,7 +49,7 @@ describe('Visiting other routes', () => {
     },
     {
       path: '/api-resource/ns/default/core~v1~Pod/schema',
-      waitFor: () => cy.get('li.co-resource-sidebar-item').should('be.visible'),
+      waitFor: () => cy.byTestID('resource-sidebar-item').should('be.visible'),
     },
     {
       path: '/api-resource/ns/default/core~v1~Pod/instances',
@@ -65,6 +67,10 @@ describe('Visiting other routes', () => {
           },
           {
             path: '/k8s/ns/openshift-machine-api/machine.openshift.io~v1beta1~Machine',
+            waitFor: () => listPage.rows.shouldBeLoaded(),
+          },
+          {
+            path: '/k8s/cluster/machine.openshift.io~v1~ControlPlaneMachineSet',
             waitFor: () => listPage.rows.shouldBeLoaded(),
           },
           {
@@ -128,6 +134,7 @@ describe('Visiting other routes', () => {
 describe('Test perspective query parameters', () => {
   before(() => {
     cy.login();
+    guidedTour.close();
   });
 
   beforeEach(() => {
@@ -135,6 +142,7 @@ describe('Test perspective query parameters', () => {
     cy.visit('/k8s/cluster/projects');
     listPage.rows.shouldBeLoaded();
     guidedTour.close();
+    checkDeveloperPerspective();
   });
 
   afterEach(() => {

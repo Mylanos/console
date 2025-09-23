@@ -6,13 +6,13 @@ import { useTranslation } from 'react-i18next';
 import { ErrorState } from '@console/internal/components/error';
 import {
   documentationURLs,
-  ExternalLink,
   getDocumentationURL,
-  Timestamp,
   isManaged,
 } from '@console/internal/components/utils';
 import { K8sResourceKind } from '@console/internal/module/k8s';
 import { PrometheusHealthPopupProps } from '@console/plugin-sdk';
+import { Timestamp } from '@console/shared/src/components/datetime/Timestamp';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import {
   riskIcons,
   colorScale,
@@ -93,21 +93,26 @@ export const InsightsPopup: React.FC<PrometheusHealthPopupProps> = ({ responses,
   ) : (
     <Stack hasGutter>
       <StackItem>
-        {t('insights-plugin~Last refresh')}: <Timestamp timestamp={lastRefreshTime} simple />
+        {t('insights-plugin~Last refresh')}:{' '}
+        <Timestamp timestamp={new Date(lastRefreshTime).toISOString()} simple />
       </StackItem>
-      <StackItem className="text-muted">
+      <StackItem className="pf-v6-u-text-color-subtle">
         {t(
           'insights-plugin~Insights Advisor identifies and prioritizes risks to security, performance, availability, and stability of your clusters.',
         )}
       </StackItem>
       {error ? (
-        <StackItem className="text-muted">
+        <StackItem className="pf-v6-u-text-color-subtle">
           {t('insights-plugin~Temporarily unavailable.')}
         </StackItem>
       ) : disabled ? (
-        <StackItem className="text-muted">{t('insights-plugin~Disabled.')}</StackItem>
+        <StackItem className="pf-v6-u-text-color-subtle">
+          {t('insights-plugin~Disabled.')}
+        </StackItem>
       ) : waiting ? (
-        <StackItem className="text-muted">{t('insights-plugin~Waiting for results.')}</StackItem>
+        <StackItem className="pf-v6-u-text-color-subtle">
+          {t('insights-plugin~Waiting for results.')}
+        </StackItem>
       ) : (
         <StackItem>
           <div>

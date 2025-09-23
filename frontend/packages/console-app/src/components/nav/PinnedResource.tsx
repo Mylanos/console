@@ -2,15 +2,15 @@ import * as React from 'react';
 import { Button } from '@patternfly/react-core';
 import { GripVerticalIcon } from '@patternfly/react-icons/dist/esm/icons/grip-vertical-icon';
 import { MinusCircleIcon } from '@patternfly/react-icons/dist/esm/icons/minus-circle-icon';
-import * as classNames from 'classnames';
+import { css } from '@patternfly/react-styles';
 import { debounce } from 'lodash';
 import { useDrag, useDrop } from 'react-dnd';
 import { useTranslation } from 'react-i18next';
 import { K8sModel, modelFor } from '@console/internal/module/k8s';
 import { useK8sModel } from '@console/shared/src/hooks/useK8sModel';
-import confirmNavUnpinModal from './confirmNavUnpinModal';
 import './PinnedResource.scss';
 import { NavItemResource } from './NavItemResource';
+import useConfirmNavUnpinModal from './useConfirmNavUnpinModal';
 
 type PinnedResourceProps = {
   resourceRef?: string;
@@ -54,10 +54,11 @@ const DraggableButton: React.FC<DraggableButtonProps> = ({ dragRef }) => {
 
 const RemoveButton: React.FC<RemoveButtonProps> = ({ resourceRef, navResources, onChange }) => {
   const { t } = useTranslation();
+  const confirmNavUnpinModal = useConfirmNavUnpinModal(navResources, onChange);
   const unPin = (e: React.MouseEvent<HTMLButtonElement>, navItem: string) => {
     e.preventDefault();
     e.stopPropagation();
-    confirmNavUnpinModal(navItem, navResources, onChange);
+    confirmNavUnpinModal(navItem);
   };
   return (
     <Button
@@ -147,7 +148,7 @@ const PinnedResource: React.FC<PinnedResourceProps> = ({
       dataAttributes={{
         'data-test': draggable ? 'draggable-pinned-resource-item' : 'pinned-resource-item',
       }}
-      className={classNames('oc-pinned-resource', {
+      className={css('oc-pinned-resource', {
         'oc-pinned-resource--dragging': draggable && isOver,
       })}
     >

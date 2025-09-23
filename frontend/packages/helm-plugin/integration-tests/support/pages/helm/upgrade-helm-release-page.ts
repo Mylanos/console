@@ -1,3 +1,4 @@
+import { warningModal } from '@console/cypress-integration-tests/views/warning-modal';
 import { helmPO } from '@console/dev-console/integration-tests/support/pageObjects/helm-po';
 
 export const upgradeHelmRelease = {
@@ -6,18 +7,10 @@ export const upgradeHelmRelease = {
     cy.get(helmPO.upgradeHelmRelease.replicaCount).clear().type(replicaCount),
   upgradeChartVersion: () => {
     cy.get(helmPO.upgradeHelmRelease.chartVersion).click();
-    const count = Cypress.$('[data-test-id="dropdown-menu"]').length;
+    const count = Cypress.$('[data-test="console-select"]').length;
     const randNum = Math.floor(Math.random() * count);
-    cy.byLegacyTestID('dropdown-menu').eq(randNum).click();
-    cy.get('body').then(($body) => {
-      if ($body.find('form.modal-content').length) {
-        cy.log('Change Chart version popup is displayed, so clicking on the proceed button');
-        cy.get('form.modal-content').within(() => {
-          cy.byLegacyTestID('modal-title').should('contain.text', 'Change chart version?');
-          cy.get('button[type=submit]').click({ force: true });
-        });
-      }
-    });
+    cy.byTestID('console-select-item').eq(randNum).click();
+    warningModal.confirm('HelmChangeChartVersionConfirmation');
   },
   clickOnUpgrade: () => {
     cy.get(helmPO.upgradeHelmRelease.upgrade).click();

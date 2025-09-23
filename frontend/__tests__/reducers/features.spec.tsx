@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { Component } from 'react';
 import * as Immutable from 'immutable';
 import * as _ from 'lodash-es';
 
@@ -53,6 +53,7 @@ describe('featureReducer', () => {
         CONSOLE_CAPABILITY_LIGHTSPEEDBUTTON_IS_ENABLED: undefined,
         CONSOLE_CAPABILITY_GETTINGSTARTEDBANNER_IS_ENABLED: undefined,
         LIGHTSPEED_IS_AVAILABLE_TO_INSTALL: undefined,
+        DEVCONSOLE_PROXY: true,
       }),
     );
   });
@@ -108,7 +109,7 @@ describe('featureReducer', () => {
 describe('connectToFlags', () => {
   type MyComponentProps = { propA: number; propB: boolean; flags: { [key: string]: boolean } };
 
-  class MyComponent extends React.Component<MyComponentProps> {
+  class MyComponent extends Component<MyComponentProps> {
     render() {
       return <div>{this.props.propA}</div>;
     }

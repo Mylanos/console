@@ -1,12 +1,14 @@
-import * as React from 'react';
-import { Helmet } from 'react-helmet';
+import { useState } from 'react';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom-v5-compat';
 import { ActionGroup, Button } from '@patternfly/react-core';
 
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
 import { SecretModel } from '../../models';
 import { IdentityProvider, k8sCreate, K8sResourceKind, OAuthKind } from '../../module/k8s';
-import { AsyncComponent, ButtonBar, PageHeading } from '../utils';
+import { AsyncComponent, ButtonBar } from '../utils';
 import { addIDP, getOAuthResource as getOAuth, redirectToOAuthPage, mockNames } from './';
 import { IDPNameInput } from './idp-name-input';
 
@@ -19,10 +21,10 @@ export const DroppableFileInput = (props: any) => (
 
 export const AddHTPasswdPage = () => {
   const navigate = useNavigate();
-  const [inProgress, setInProgress] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState('');
-  const [name, setName] = React.useState('htpasswd');
-  const [htpasswdFileContent, setHtpasswdFileContent] = React.useState('');
+  const [inProgress, setInProgress] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [name, setName] = useState('htpasswd');
+  const [htpasswdFileContent, setHtpasswdFileContent] = useState('');
 
   const { t } = useTranslation();
 
@@ -111,17 +113,15 @@ export const AddHTPasswdPage = () => {
 
   return (
     <div className="co-m-pane__form">
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
+      <DocumentTitle>{title}</DocumentTitle>
       <PageHeading
         title={title}
         helpText={t(
           'public~HTPasswd validates usernames and passwords against a flat file generated using the htpasswd command.',
         )}
       />
-      <div className="co-m-pane__body">
-        <form onSubmit={submit} name="form" className="co-m-pane__body-group">
+      <PaneBody>
+        <form onSubmit={submit} name="form">
           <IDPNameInput value={name} onChange={(e) => setName(e.currentTarget.value)} />
           <div className="form-group">
             <DroppableFileInput
@@ -147,7 +147,7 @@ export const AddHTPasswdPage = () => {
             </ActionGroup>
           </ButtonBar>
         </form>
-      </div>
+      </PaneBody>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Grid, GridItem } from '@patternfly/react-core';
+import { Grid, GridItem, ListItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom-v5-compat';
 import { resourcePath } from '@console/internal/components/utils';
@@ -29,7 +29,7 @@ const BuildRunItem: React.FC<BuildRunItemProps> = ({ buildRun }) => {
     : creationTimestamp;
 
   return (
-    <li className="so-build-run-item list-group-item">
+    <ListItem className="so-build-run-item">
       <Grid hasGutter>
         <GridItem span={6}>
           <div>
@@ -37,7 +37,9 @@ const BuildRunItem: React.FC<BuildRunItemProps> = ({ buildRun }) => {
             {lastUpdated && (
               <>
                 {' '}
-                <span className="so-build-run-item__time text-muted">({fromNow(lastUpdated)})</span>
+                <span className="so-build-run-item__time pf-v6-u-text-color-subtle">
+                  ({fromNow(lastUpdated)})
+                </span>
               </>
             )}
           </div>
@@ -45,11 +47,11 @@ const BuildRunItem: React.FC<BuildRunItemProps> = ({ buildRun }) => {
         <GridItem span={3}>
           <BuildRunStatus buildRun={buildRun} />
         </GridItem>
-        <GridItem span={3} className="text-right">
+        <GridItem span={3}>
           <Link to={`${path}/logs`}>{t('shipwright-plugin~View logs')}</Link>
         </GridItem>
       </Grid>
-    </li>
+    </ListItem>
   );
 };
 

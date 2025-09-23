@@ -5,15 +5,15 @@ import {
   ClipboardCopyVariant,
   FormGroup,
   FormHelperText,
+  Grid,
+  GridItem,
   HelperText,
   HelperTextItem,
   ValidatedOptions,
 } from '@patternfly/react-core';
-import { ExclamationCircleIcon } from '@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon';
 import { useFormikContext, FormikValues } from 'formik';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { RedExclamationCircleIcon } from '@console/dynamic-plugin-sdk';
 import { K8sResourceKind } from '@console/internal/module/k8s';
 import {
   RegistryType,
@@ -78,10 +78,7 @@ const ImageStream: React.FC<{
     isStreamsAvailable &&
     isTagsAvailable;
   const helperTextInvalid = validated === ValidatedOptions.error && isi.status?.message && (
-    <>
-      <ExclamationCircleIcon />
-      &nbsp;{isi.status?.message}
-    </>
+    <>{isi.status?.message}</>
   );
 
   return (
@@ -95,34 +92,35 @@ const ImageStream: React.FC<{
           required={required}
           data-test={dataTest}
         >
-          <div className="row">
-            <div className="col-lg-4 col-md-4 col-sm-4 col-xs-12">
-              <ImageStreamNsDropdown disabled={disabled} formContextField={formContextField} />
-            </div>
-            <div className="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+          <Grid hasGutter style={{ position: 'relative' }}>
+            <GridItem lg={4} md={4} sm={4}>
+              <ImageStreamNsDropdown
+                disabled={disabled}
+                formContextField={formContextField}
+                className="odc-imagestream-slash"
+              />
+            </GridItem>
+            <GridItem lg={4} md={4} sm={4}>
               <ImageStreamDropdown
                 disabled={disabled}
                 formContextField={formContextField}
                 reloadCount={reloadCount}
+                className="odc-imagestream-colon"
               />
-              <div className="odc-imagestream-separator">/</div>
-            </div>
-            <div className="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+            </GridItem>
+            <GridItem lg={4} md={4} sm={4}>
               <ImageStreamTagDropdown
                 disabled={disabled}
                 formContextField={formContextField}
                 reloadCount={reloadCount}
               />
-              <div className="odc-imagestream-separator">:</div>
-            </div>
-          </div>
+            </GridItem>
+          </Grid>
 
           {validated === ValidatedOptions.error && (
             <FormHelperText>
               <HelperText>
-                <HelperTextItem variant="error" icon={<RedExclamationCircleIcon />}>
-                  {helperTextInvalid}
-                </HelperTextItem>
+                <HelperTextItem variant="error">{helperTextInvalid}</HelperTextItem>
               </HelperText>
             </FormHelperText>
           )}

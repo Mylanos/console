@@ -1,6 +1,6 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAccessReview2 } from '@console/internal/components/utils';
+import { useAccessReview } from '@console/dynamic-plugin-sdk/src';
 import { useK8sGet } from '@console/internal/components/utils/k8s-get-hook';
 import { K8sKind, K8sResourceKind } from '@console/internal/module/k8s';
 import { KnEventCatalogMetaData } from '../components/add/import-types';
@@ -50,15 +50,18 @@ export const useEventSourceStatus = (
     !isKameletSource &&
     eventSourceModels?.find((model: K8sKind) => model.kind === sourceKindProp);
   const sourceModel = isKameletSource ? CamelKameletBindingModel : eventSourceModel;
+  const [createSourceAccess, createSourceAccessLoading] = useAccessReview(
+    {
+      group: sourceModel?.apiGroup,
+      resource: sourceModel?.plural,
+      verb: 'create',
+      namespace,
+    },
+    undefined,
+    true,
+  );
 
-  const [createSourceAccess, createSourceAccessLoading] = useAccessReview2({
-    group: sourceModel?.apiGroup,
-    resource: sourceModel?.plural,
-    verb: 'create',
-    namespace,
-  });
-
-  const sourceStatus = React.useMemo(() => {
+  const sourceStatus = useMemo(() => {
     if (!isSourceKindPresent) {
       return {
         isValidSource: false,

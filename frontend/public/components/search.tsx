@@ -1,8 +1,8 @@
 import * as _ from 'lodash-es';
 import * as React from 'react';
-import { Helmet } from 'react-helmet';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom-v5-compat';
+import { useParams } from 'react-router-dom';
 import {
   Accordion,
   AccordionContent,
@@ -10,9 +10,7 @@ import {
   AccordionToggle,
   Button,
   ButtonVariant,
-  Divider,
   PageSection,
-  Content,
   Toolbar,
   ToolbarLabel,
   ToolbarContent,
@@ -22,7 +20,6 @@ import {
 import { PlusCircleIcon } from '@patternfly/react-icons/dist/esm/icons/plus-circle-icon';
 import { MinusCircleIcon } from '@patternfly/react-icons/dist/esm/icons/minus-circle-icon';
 import { getBadgeFromType, usePinnedResources } from '@console/shared';
-import { connectToModel } from '../kinds';
 import { DefaultPage } from './default-resource';
 import { requirementFromString } from '../module/k8s/selector-requirement';
 import { ResourceListDropdown } from './resource-dropdown';
@@ -42,7 +39,8 @@ import {
   setQueryArgument,
   AsyncComponent,
 } from './utils';
-import confirmNavUnpinModal from '@console/app/src/components/nav/confirmNavUnpinModal';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
+import useConfirmNavUnpinModal from '@console/app/src/components/nav/useConfirmNavUnpinModal';
 import { SearchFilterDropdown, searchFilterValues } from './search-filter-dropdown';
 import { useExtensions, isResourceListPage, ResourceListPage } from '@console/plugin-sdk';
 import {
@@ -50,8 +48,11 @@ import {
   isResourceListPage as isDynamicResourceListPage,
   useActivePerspective,
 } from '@console/dynamic-plugin-sdk';
+import { useK8sModel } from '@console/dynamic-plugin-sdk/src/lib-core';
 
-const ResourceList = connectToModel(({ kindObj, mock, namespace, selector, nameFilter }) => {
+const ResourceList = ({ kind, mock, namespace, selector, nameFilter }) => {
+  const { plural } = useParams<{ plural?: string }>();
+  const [kindObj] = useK8sModel(kind || plural);
   const resourceListPageExtensions = useExtensions<ResourceListPage>(isResourceListPage);
   const dynamicResourceListPageExtensions = useExtensions<DynamicResourceListPage>(
     isDynamicResourceListPage,
@@ -82,7 +83,7 @@ const ResourceList = connectToModel(({ kindObj, mock, namespace, selector, nameF
       hideColumnManagement
     />
   );
-});
+};
 
 const SearchPage_: React.FC<SearchProps> = (props) => {
   const [perspective] = useActivePerspective();
@@ -94,7 +95,8 @@ const SearchPage_: React.FC<SearchProps> = (props) => {
   const [pinnedResources, setPinnedResources, pinnedResourcesLoaded] = usePinnedResources();
   const { noProjectsAvailable } = props;
   const { t } = useTranslation();
-  const { ns: namespace } = useParams();
+  const { ns: namespace } = useParams<{ ns?: string }>();
+  const confirmNavUnpinModal = useConfirmNavUnpinModal(pinnedResources, setPinnedResources);
   // Set state variables from the URL
   React.useEffect(() => {
     let kind: string, q: string, name: string;
@@ -156,7 +158,7 @@ const SearchPage_: React.FC<SearchProps> = (props) => {
     e.stopPropagation();
     const index = pinnedResources.indexOf(resource);
     if (index >= 0) {
-      confirmNavUnpinModal(resource, pinnedResources, setPinnedResources);
+      confirmNavUnpinModal(resource);
       return;
     }
     setPinnedResources([resource, ...pinnedResources]);
@@ -205,7 +207,7 @@ const SearchPage_: React.FC<SearchProps> = (props) => {
     return (
       <span className="co-search-group__accordion-label">
         {labelPluralKey ? t(labelPluralKey) : labelPlural}{' '}
-        <div className="text-muted small">
+        <div className="pf-v6-u-font-size-xs pf-v6-u-text-color-subtle pf-v6-u-font-weight-normal pf-v6-u-ml-sm">
           {apiGroup || 'core'}/{apiVersion}
         </div>
       </span>
@@ -223,11 +225,9 @@ const SearchPage_: React.FC<SearchProps> = (props) => {
 
   return (
     <>
-      <Helmet>
-        <title>{t('public~Search')}</title>
-      </Helmet>
+      <DocumentTitle>{t('public~Search')}</DocumentTitle>
+      <PageHeading title={t('public~Search')} />
       <PageSection hasBodyWrapper={false}>
-        <Content component="h1">{t('public~Search')}</Content>
         <Toolbar
           id="search-toolbar"
           clearAllFilters={clearAll}
@@ -283,9 +283,6 @@ const SearchPage_: React.FC<SearchProps> = (props) => {
             </ToolbarItem>
           </ToolbarContent>
         </Toolbar>
-      </PageSection>
-      <Divider component="div" />
-      <PageSection hasBodyWrapper={false}>
         <Accordion asDefinitionList={false}>
           {[...selectedItems].map((resource) => {
             const isCollapsed = collapsedKinds.has(resource);

@@ -20,10 +20,7 @@ export const helmDetailsPage = {
       });
   },
   verifyFieldValue: (fieldName: string, fieldValue: string) => {
-    cy.get('dl.co-m-pane__details dt')
-      .contains(fieldName)
-      .next('dd')
-      .should('contain.text', fieldValue);
+    cy.get('dl dt').contains(fieldName).next('dd').should('contain.text', fieldValue);
   },
   uninstallHelmRelease: () => {
     cy.get('form.modal-content').within(() => {
@@ -46,29 +43,29 @@ export const helmDetailsPage = {
   selectedHelmTab: (name: string) => {
     cy.byLegacyTestID(`horizontal-link-${name}`)
       .should('exist')
-      .parent('li')
-      .should('have.class', 'co-m-horizontal-nav-item--active');
+      .parent('.pf-v6-c-tabs__item')
+      .should('have.class', 'pf-m-current');
   },
-  verifyHelmActionsDropdown: () => cy.byLegacyTestID('dropdown-button').should('be.visible'),
-  clickHelmActionButton: () => cy.byLegacyTestID('dropdown-button').click(),
+  verifyHelmActionsDropdown: () => cy.byTestID('console-select-menu-toggle').should('be.visible'),
+  clickHelmActionButton: () => cy.byTestID('console-select-menu-toggle').click(),
   verifyActionsInCreateMenu: () => {
-    cy.byLegacyTestID('dropdown-menu').contains('Repository').should('exist');
-    cy.byLegacyTestID('dropdown-menu').contains('Helm Release').should('exist');
+    cy.byTestID('console-select-item').contains('Repository').should('exist');
+    cy.byTestID('console-select-item').contains('Helm Release').should('exist');
   },
   clickCreateMenu: (createMenuOption: string) => {
-    cy.byLegacyTestID('dropdown-button').click();
-    cy.byLegacyTestID('dropdown-menu').contains(createMenuOption).click();
+    cy.byTestID('console-select-menu-toggle').click();
+    cy.byTestID('console-select-item').contains(createMenuOption).click();
   },
   clickHelmChartRepository: (repoName: string) => cy.byLegacyTestID(repoName).click(),
   selectHelmChartRepository: (repoName: string) =>
     cy.byTestID(`chartRepositoryTitle-${repoName}`).click(),
   clickCreateHelmRelease: () => {
-    cy.byLegacyTestID('dropdown-button').click();
-    cy.byLegacyTestID('dropdown-menu').contains('Helm Release').click();
+    cy.byTestID('console-select-menu-toggle').click();
+    cy.byTestID('console-select-item').contains('Helm Release').click();
   },
   clickCreateRepository: () => {
-    cy.byLegacyTestID('dropdown-button').click();
-    cy.byLegacyTestID('dropdown-menu').contains('Repository').click();
+    cy.byTestID('console-select-menu-toggle').click();
+    cy.byTestID('console-select-item').contains('Repository').click();
   },
   clickRevisionHistoryTab: () => cy.get(helmPO.revisionHistoryTab).click(),
 };

@@ -1,6 +1,4 @@
-import * as React from 'react';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
+import { createContext, useState, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom-v5-compat';
 import {
@@ -11,7 +9,7 @@ import { getNamespace } from '@console/internal/components/utils/link';
 import { flagPending } from '@console/internal/reducers/features';
 import { FLAGS } from '@console/shared';
 import { useFlag } from '@console/shared/src/hooks/flag';
-import { usePreferredNamespace } from '../user-preferences/namespace';
+import { usePreferredNamespace } from '../user-preferences/namespace/usePreferredNamespace';
 import { getValueForNamespace } from './getValueForNamespace';
 import { useLastNamespace } from './useLastNamespace';
 
@@ -20,7 +18,7 @@ type NamespaceContextType = {
   setNamespace?: (ns: string) => void;
 };
 
-export const NamespaceContext = React.createContext<NamespaceContextType>({});
+export const NamespaceContext = createContext<NamespaceContextType>({});
 
 const useUrlNamespace = () => getNamespace(useLocation().pathname);
 
@@ -33,7 +31,7 @@ type UseValuesForNamespaceContext = () => {
 export const useValuesForNamespaceContext: UseValuesForNamespaceContext = () => {
   const urlNamespace = useUrlNamespace();
   const navigate = useNavigate();
-  const [activeNamespace, setActiveNamespace] = React.useState<string>(urlNamespace);
+  const [activeNamespace, setActiveNamespace] = useState<string>(urlNamespace);
   const [preferredNamespace, , preferredNamespaceLoaded] = usePreferredNamespace();
   const [lastNamespace, setLastNamespace, lastNamespaceLoaded] = useLastNamespace();
   const useProjects: boolean = useFlag(FLAGS.OPENSHIFT);
@@ -55,9 +53,9 @@ export const useValuesForNamespaceContext: UseValuesForNamespaceContext = () => 
   // Automatically check if preferred and last namespace still exist.
   const resourcesLoaded: boolean =
     !flagPending(useProjects) && preferredNamespaceLoaded && lastNamespaceLoaded;
-  React.useEffect(() => {
+  useEffect(() => {
     if (!urlNamespace && resourcesLoaded) {
-      getValueForNamespace(preferredNamespace, lastNamespace, useProjects)
+      getValueForNamespace(preferredNamespace, lastNamespace, useProjects, activeNamespace)
         .then((ns: string) => {
           updateNamespace(ns);
         })
@@ -72,7 +70,7 @@ export const useValuesForNamespaceContext: UseValuesForNamespaceContext = () => 
 
   // Updates active namespace (in context and redux state) when the url changes.
   // This updates the redux state also after the initial rendering.
-  React.useEffect(() => {
+  useEffect(() => {
     if (urlNamespace) {
       updateNamespace(urlNamespace);
     }
@@ -81,7 +79,7 @@ export const useValuesForNamespaceContext: UseValuesForNamespaceContext = () => 
 
   // Change active namespace (in context and redux state) as well as last used namespace
   // when a component calls setNamespace, for example via useActiveNamespace()
-  const setNamespace = React.useCallback(
+  const setNamespace = useCallback(
     (ns: string) => {
       ns !== lastNamespace && setLastNamespace(ns);
       updateNamespace(ns);

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { DescriptionList, GridItem } from '@patternfly/react-core';
 import { JSONSchema7 } from 'json-schema';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -68,32 +69,28 @@ const DescriptorDetailsItemArrayGroup: React.FC<DescriptorDetailsItemGroupProps>
   return (
     <div className={className}>
       <DetailsItem description={description} label={label} obj={obj} path={`${type}.${groupPath}`}>
-        <div className="details-item__array">
-          {value?.length ? (
-            _.times(value.length, (i) => (
-              <div className="details-item__value--group">
-                <dl>
-                  {_.map(arrayElementDescriptors, (primitiveDescriptor: Descriptor) => {
-                    const path = primitiveDescriptor.path.replace(/\d+/, String(i));
-                    return (
-                      <DescriptorDetailsItem
-                        descriptor={{ ...primitiveDescriptor, path }}
-                        key={`${type}.${path}`}
-                        model={model}
-                        obj={obj}
-                        onError={onError}
-                        schema={getSchemaAtPath(schema, path)}
-                        type={type}
-                      />
-                    );
-                  })}
-                </dl>
-              </div>
-            ))
-          ) : (
-            <span className="text-muted">{t('public~None')}</span>
-          )}
-        </div>
+        {value?.length ? (
+          _.times(value.length, (i) => (
+            <DescriptionList className="co-editable-label-group">
+              {_.map(arrayElementDescriptors, (primitiveDescriptor: Descriptor) => {
+                const path = primitiveDescriptor.path.replace(/\d+/, String(i));
+                return (
+                  <DescriptorDetailsItem
+                    descriptor={{ ...primitiveDescriptor, path }}
+                    key={`${type}.${path}`}
+                    model={model}
+                    obj={obj}
+                    onError={onError}
+                    schema={getSchemaAtPath(schema, path)}
+                    type={type}
+                  />
+                );
+              })}
+            </DescriptionList>
+          ))
+        ) : (
+          <span className="pf-v6-u-text-color-subtle">{t('public~None')}</span>
+        )}
       </DetailsItem>
     </div>
   );
@@ -114,49 +111,44 @@ const DescriptorDetailsItemGroup: React.FC<DescriptorDetailsItemGroupProps> = ({
   const label = descriptor?.displayName || groupSchema?.title || _.startCase(groupPath);
   const arrayGroups = _.pickBy(nested, 'isArrayGroup');
   const primitives = _.omitBy(nested, 'isArrayGroup');
-  const className = _.isEmpty(arrayGroups) || _.isEmpty(primitives) ? 'col-sm-6' : 'col-sm-12';
+  const span = _.isEmpty(arrayGroups) || _.isEmpty(primitives) ? 6 : 12;
   return (
-    <div className={className}>
+    <GridItem sm={span}>
       <DetailsItem description={description} label={label} obj={obj} path={`${type}.${groupPath}`}>
-        <dl className="details-item__value--group olm-descriptors__group">
-          {!_.isEmpty(primitives) && (
-            <div>
-              {_.map(primitives, ({ descriptor: primitiveDescriptor }) => (
-                <DescriptorDetailsItem
-                  descriptor={primitiveDescriptor}
-                  key={`${type}.${primitiveDescriptor.path}`}
-                  model={model}
-                  obj={obj}
-                  onError={onError}
-                  schema={schema}
-                  type={type}
-                />
-              ))}
-            </div>
-          )}
-          {!_.isEmpty(arrayGroups) && (
-            <div>
-              {_.map(arrayGroups, (arrayGroup: DescriptorGroup) => (
-                <DescriptorDetailsItemArrayGroup
-                  group={arrayGroup}
-                  groupPath={arrayGroup.arrayGroupPath}
-                  key={`${type}.${groupPath}.${arrayGroup.arrayGroupPath}`}
-                  model={model}
-                  obj={obj}
-                  onError={onError}
-                  schema={schema}
-                  type={type}
-                />
-              ))}
-            </div>
-          )}
-        </dl>
+        <DescriptionList className="olm-descriptors__group co-editable-label-group">
+          {!_.isEmpty(primitives) &&
+            _.map(primitives, ({ descriptor: primitiveDescriptor }) => (
+              <DescriptorDetailsItem
+                descriptor={primitiveDescriptor}
+                key={`${type}.${primitiveDescriptor.path}`}
+                model={model}
+                obj={obj}
+                onError={onError}
+                schema={schema}
+                type={type}
+              />
+            ))}
+          {!_.isEmpty(arrayGroups) &&
+            _.map(arrayGroups, (arrayGroup: DescriptorGroup) => (
+              <DescriptorDetailsItemArrayGroup
+                group={arrayGroup}
+                groupPath={arrayGroup.arrayGroupPath}
+                key={`${type}.${groupPath}.${arrayGroup.arrayGroupPath}`}
+                model={model}
+                obj={obj}
+                onError={onError}
+                schema={schema}
+                type={type}
+              />
+            ))}
+        </DescriptionList>
       </DetailsItem>
-    </div>
+    </GridItem>
   );
 };
 
-export const DescriptorDetailsItemList: React.FC<DescriptorDetailsItemListProps> = ({
+/** Note: MUST be used inside a `<DescriptionList>` */
+export const DescriptorDetailsItems: React.FC<DescriptorDetailsItemsProps> = ({
   descriptors,
   model,
   obj,
@@ -169,7 +161,7 @@ export const DescriptorDetailsItemList: React.FC<DescriptorDetailsItemListProps>
     descriptors,
   ]);
   return (
-    <dl className={`olm-descriptors olm-descriptors--${type}`}>
+    <>
       {_.map(groupedDescriptors, (group, groupPath) => {
         const groupProps = {
           group,
@@ -214,7 +206,7 @@ export const DescriptorDetailsItemList: React.FC<DescriptorDetailsItemListProps>
           />
         );
       })}
-    </dl>
+    </>
   );
 };
 
@@ -234,14 +226,11 @@ type DescriptorDetailsItemGroupProps = Omit<DescriptorDetailsItemProps, 'descrip
   className?: string;
 };
 
-type DescriptorDetailsItemListProps = Omit<
-  DescriptorDetailsItemGroupProps,
-  'groupPath' | 'group'
-> & {
+type DescriptorDetailsItemsProps = Omit<DescriptorDetailsItemGroupProps, 'groupPath' | 'group'> & {
   descriptors: Descriptor[];
   itemClassName?: string;
 };
 
 DescriptorDetailsItem.displayName = 'DescriptorDetailsItem';
 DescriptorDetailsItemGroup.displayName = 'DescriptorDetailsItemGroup';
-DescriptorDetailsItemList.displayName = 'DescriptorDetailsItemList';
+DescriptorDetailsItems.displayName = 'DescriptorDetailsItems';

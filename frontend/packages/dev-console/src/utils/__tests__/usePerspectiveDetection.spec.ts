@@ -1,11 +1,9 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useSelector } from 'react-redux';
-import { testHook } from '../../../../../__tests__/utils/hooks-utils';
+import { testHook } from '@console/shared/src/test-utils/hooks-utils';
 import { usePerspectiveDetection } from '../perspective';
 
 jest.mock('react-redux', () => ({
-  ...(jest as any).requireActual('react-redux'),
+  ...jest.requireActual('react-redux'),
   useSelector: jest.fn(),
 }));
 

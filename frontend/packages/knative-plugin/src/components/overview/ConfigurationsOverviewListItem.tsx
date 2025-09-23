@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { ListItem } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { ResourceLink } from '@console/internal/components/utils';
 import { K8sResourceKind, referenceForModel } from '@console/internal/module/k8s';
@@ -16,18 +17,22 @@ const ConfigurationsOverviewListItem: React.FC<ConfigurationsOverviewListItemPro
 }) => {
   const { t } = useTranslation();
   return (
-    <li className="list-group-item">
+    <ListItem>
       <ResourceLink
         kind={referenceForModel(ConfigurationModel)}
         name={name}
         namespace={namespace}
       />
-      <span className="text-muted">{t('knative-plugin~Latest created Revision name:')} </span>
+      <span className="pf-v6-u-text-color-subtle">
+        {t('knative-plugin~Latest created Revision name:')}{' '}
+      </span>
       <span>{latestCreatedRevisionName}</span>
       <br />
-      <span className="text-muted">{t('knative-plugin~Latest ready Revision name:')} </span>
+      <span className="pf-v6-u-text-color-subtle">
+        {t('knative-plugin~Latest ready Revision name:')}{' '}
+      </span>
       <span>{latestReadyRevisionName}</span>
-    </li>
+    </ListItem>
   );
 };
 export default ConfigurationsOverviewListItem;

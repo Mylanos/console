@@ -1,12 +1,12 @@
 import * as React from 'react';
-import { Button } from '@patternfly/react-core';
+import { Button, List } from '@patternfly/react-core';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom-v5-compat';
 import { SidebarSectionHeading, useAccessReview } from '@console/internal/components/utils';
 import { K8sResourceKind, referenceForModel } from '@console/internal/module/k8s';
 import { ServiceModel, RevisionModel } from '../../models';
-import { setTrafficDistributionModal } from '../modals';
+import { useTrafficSplittingModalLauncher } from '../traffic-splitting/TrafficSplittingController';
 import RevisionsOverviewListItem from './RevisionsOverviewListItem';
 import './RevisionsOverviewList.scss';
 
@@ -24,6 +24,7 @@ const RevisionsOverviewList: React.FC<RevisionsOverviewListProps> = ({
   hideSectionHeading,
 }) => {
   const { t } = useTranslation();
+  const trafficDistributionModalLauncher = useTrafficSplittingModalLauncher({ obj: service });
   const canSetTrafficDistribution = useAccessReview({
     group: ServiceModel.apiGroup,
     resource: ServiceModel.plural,
@@ -72,7 +73,7 @@ const RevisionsOverviewList: React.FC<RevisionsOverviewListProps> = ({
           {canSetTrafficDistribution && (
             <Button
               variant="secondary"
-              onClick={() => setTrafficDistributionModal({ obj: service })}
+              onClick={trafficDistributionModalLauncher}
               isDisabled={!(revisions && revisions.length)}
             >
               {t('knative-plugin~Set traffic distribution')}
@@ -81,11 +82,11 @@ const RevisionsOverviewList: React.FC<RevisionsOverviewListProps> = ({
         </SidebarSectionHeading>
       )}
       {_.isEmpty(revisions) ? (
-        <span className="text-muted">
+        <span className="pf-v6-u-text-color-subtle">
           {t('knative-plugin~No Revisions found for this resource.')}
         </span>
       ) : (
-        <ul className="list-group">
+        <List isPlain isBordered>
           {_.map(filteredRevisions, (revision) => (
             <RevisionsOverviewListItem
               key={revision.metadata.uid}
@@ -93,7 +94,7 @@ const RevisionsOverviewList: React.FC<RevisionsOverviewListProps> = ({
               service={service}
             />
           ))}
-        </ul>
+        </List>
       )}
     </>
   );

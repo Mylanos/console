@@ -22,7 +22,7 @@ export const gitPO = {
   builderImageCard: '.odc-selector-card',
   nodeName: '[data-test-id="application-form-app-name"]',
   appName: '[id$=application-name-field]',
-  createNewApp: '[data-test-id="dropdown-menu"]',
+  createNewApp: '[data-test="console-select-item"]',
   newAppName: '[data-test-id="application-form-app-input"]',
   create: '[data-test-id="submit-button"]',
   cancel: '[data-test-id="reset-button"]',
@@ -142,7 +142,7 @@ export const catalogPO = {
   templateTitle: '.catalog-tile-pf-title',
   card: '[class$="catalog-tile"]',
   cardBadge: '.catalog-tile-pf-badge-container',
-  groupBy: '[data-test-id="dropdown-button"]',
+  groupBy: '[data-test="console-select-menu-toggle"]',
   aToz: '[data-test-dropdown-menu="desc"]',
   zToA: '[data-test-dropdown-menu="asc"]',
   cardType: '.catalog-tile-pf-badge-container',
@@ -157,7 +157,7 @@ export const catalogPO = {
   filterInfoTipContent: '[id*=popover]',
   filterCheckBox: '[type="checkbox"]',
   chartRepositoryGroup: '[data-test-group-name="chartRepositoryTitle"]',
-  catalogTypeLink: 'li.vertical-tabs-pf-tab.shown.text-capitalize.co-catalog-tab__empty',
+  catalogTypeLink: 'li.vertical-tabs-pf-tab.shown',
   catalogTypes: {
     operatorBacked: '[data-test="kind-cluster-service-version"]',
     helmCharts: '[data-test="tab HelmChart"]',
@@ -195,7 +195,7 @@ export const catalogPO = {
   },
   mariaDBTemplate: {
     namespace: '#namespace',
-    title: 'h1.co-m-pane__heading',
+    title: '[data-test="page-heading"] h1',
     memoryLimit: '#MEMORY_LIMIT',
     imageStreamNameSpace: '#NAMESPACE',
     databaseServiceName: '#DATABASE_SERVICE_NAME',
@@ -259,7 +259,7 @@ export const samplesPO = {
   },
   form: {
     name: '[data-test-id="application-form-app-name"]',
-    header: '[data-test-id="resource-title"]',
+    header: '[data-test="page-heading"] h1',
   },
 };
 
@@ -269,6 +269,11 @@ export const containerImagePO = {
     externalRegistryImageCheckBox: '#form-radiobutton-registry-external-field',
     internalRegistryImageCheckBox: '#form-radiobutton-registry-internal-field',
     runTimeIconDropdown: '.odc-icon-dropdown button',
+    addCustomIcon: '[data-test="add-custom-icon"]',
+    customIconModal: {
+      url: '[data-test="import-custom-icon-url-input"]',
+      confirmButton: '[data-test="import-custom-icon-confirm"]',
+    },
     externalRegistry: {
       allowImageFromInsecureRegistry: '#form-checkbox-allowInsecureRegistry-field',
       imageName: '#form-input-searchTerm-field',
@@ -340,15 +345,15 @@ export const eventSourcePO = {
     name: '#form-input-formData-name-field',
     resourceToggleButton: '[id="form-radiobutton-formData-sinkType-resource-field"]',
     resourceDropDownField: '[id="form-ns-dropdown-formData-sink-key-field"]',
-    resourceDropDownItem: '[data-test="dropdown-menu-item-link"]',
-    resourceFilter: '[data-test-id="dropdown-text-filter"]',
+    resourceDropDownItem: '[data-test="console-select-item"]',
+    resourceFilter: '[data-test="console-select-search-input"]',
     resourceSearch: '[placeholder="Select resource"]',
   },
   createSinkBinding: {
     resourceToggleButton: '[data-test="resource-view-input"]',
     resourceDropDownField: '[id="form-ns-dropdown-formData-sink-key-field"]',
-    resourceDropDownItem: '[data-test="dropdown-menu-item-link"]',
-    resourceSearchField: '[data-test-id="dropdown-text-filter"]',
+    resourceDropDownItem: '[data-test="console-select-item"]',
+    resourceSearchField: '[data-test="console-select-search-input"]',
     createButton: '[data-test=confirm-action]',
     moveSinkButton: '[data-test-action="Move sink"]',
     eventSourceNode: 'g.odc-event-source',
@@ -365,7 +370,7 @@ export const eventsPO = {
   attributeName: '[data-test="pairs-list-name"]',
   attributeValue: '[data-test="pairs-list-value"]',
   nameField: '[id="form-input-formData-metadata-name-field"]',
-  pageTitle: '[data-test-id="resource-title"]',
+  pageTitle: '[data-test="page-heading"] h1',
   search: '[placeholder="Filter by keyword..."]',
   subscribeButton: '[data-test-id="submit-button"]',
   subscriberDropDown: '[id="form-ns-dropdown-formData-spec-subscriber-ref-name-field"]',
@@ -384,13 +389,13 @@ export const devFilePO = {
 };
 
 export const channelPO = {
-  channelType: '[data-test-id="dropdown-button"]',
+  channelType: '[data-test="console-select-menu-toggle"]',
   channelName: '[data-test-id="channel-name"]',
   appName: '[data-test-id="application-form-app-input"]',
 };
 
 export const yamlPO = {
-  yamlEditor: '.react-monaco-editor-container',
+  yamlEditor: '.ocs-yaml-editor',
 };
 
 export const uploadJarFilePO = {
@@ -410,7 +415,7 @@ export const quickSearchAddPO = {
     return `[data-test="item-name-${itemName}-${itemType}"]`;
   },
   quickSearchCreateButton: '[data-test="create-quick-search"]',
-  viewInDevCatalog: '#devCatalog',
+  viewInSoftwareCatalog: '#devCatalog',
   quickSearchNoResults: '[data-test="quick-search-no-results"]',
 };
 

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useMemo } from 'react';
 import { TFunction } from 'i18next';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -19,10 +19,13 @@ const normalizeBuilderImages = (
   t: TFunction,
 ): CatalogItem[] => {
   const normalizedBuilderImages = _.map(builderImageStreams, (imageStream) => {
-    const { uid, name, namespace: imageStreamNS, annotations } = imageStream.metadata;
+    const uid = imageStream.metadata?.uid || '';
+    const name = imageStream.metadata?.name || '';
+    const imageStreamNS = imageStream.metadata?.namespace || '';
+    const annotations = imageStream.metadata?.annotations;
     const tag = getMostRecentBuilderTag(imageStream);
     const displayName = annotations?.[ANNOTATIONS.displayName] ?? name;
-    const title = displayName && displayName.length < 14 ? displayName : prettifyName(name);
+    const title = displayName && displayName.length < 14 ? displayName : prettifyName(name || '');
     const icon = getImageStreamIcon(tag);
     const imgUrl = getImageForIconClass(icon);
     const iconClass = imgUrl ? null : icon;
@@ -43,7 +46,7 @@ const normalizeBuilderImages = (
       creationTimestamp,
       icon: {
         url: imgUrl,
-        class: iconClass,
+        class: iconClass || undefined,
       },
       cta: {
         label: createLabel,
@@ -67,7 +70,7 @@ const useBuilderImageSamples: ExtensionHook<CatalogItem[]> = ({ namespace }) => 
     resourceSelector,
   );
 
-  const normalizedBuilderImages = React.useMemo<CatalogItem[]>(() => {
+  const normalizedBuilderImages = useMemo<CatalogItem[]>(() => {
     const filteredImageStreams = imageStreams.filter((imageStream) => {
       const recentTag = getMostRecentBuilderTag(imageStream);
       const sampleRepo = recentTag?.annotations?.sampleRepo;

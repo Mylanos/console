@@ -1,13 +1,22 @@
 import * as React from 'react';
 import * as _ from 'lodash-es';
-
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
+import { Banner, Flex } from '@patternfly/react-core';
 import { FLAGS } from '@console/shared';
-import { connectToFlags } from '../reducers/connectToFlags';
+import { connectToFlags, WithFlagsProps } from '../reducers/connectToFlags';
 import { Firehose, FirehoseResult } from './utils';
 import { referenceForModel } from '../module/k8s';
 import { ConsoleNotificationModel } from '../models/index';
 
-const ConsoleNotifier_: React.FC<ConsoleNotifierProps> = ({ obj, location }) => {
+type ConsoleNotifierProps = {
+  location: 'BannerTop' | 'BannerBottom' | 'BannerTopBottom';
+};
+
+type PrivateConsoleNotifierProps = ConsoleNotifierProps & {
+  obj: FirehoseResult;
+};
+
+const ConsoleNotifier_: React.FC<PrivateConsoleNotifierProps> = ({ obj, location }) => {
   if (_.isEmpty(obj)) {
     return null;
   }
@@ -20,32 +29,28 @@ const ConsoleNotifier_: React.FC<ConsoleNotifierProps> = ({ obj, location }) => 
         // notification.spec.location is optional
         // render the notification BannerTop if location is not specified
         (!notification.spec.location && location === 'BannerTop') ? (
-          <div
-            key={notification.metadata.uid}
-            className="co-global-notification"
+          <Banner
             style={{
               backgroundColor: notification.spec.backgroundColor,
               color: notification.spec.color,
             }}
+            key={notification.metadata.uid}
             data-test={`${notification.metadata.name}-${notification.spec.location}`}
           >
-            <div className="co-global-notification__content">
-              <p className="co-global-notification__text">
+            <Flex justifyContent={{ default: 'justifyContentCenter' }}>
+              <p className="pf-v6-u-text-align-center">
                 {notification.spec.text}{' '}
                 {_.get(notification.spec, ['link', 'href']) && (
-                  <a
+                  <ExternalLink
                     href={notification.spec.link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="co-external-link"
                     style={{ color: notification.spec.color }}
                   >
                     {notification.spec.link.text || 'More info'}
-                  </a>
+                  </ExternalLink>
                 )}
               </p>
-            </div>
-          </div>
+            </Flex>
+          </Banner>
         ) : null,
       )}
     </>
@@ -53,7 +58,9 @@ const ConsoleNotifier_: React.FC<ConsoleNotifierProps> = ({ obj, location }) => 
 };
 ConsoleNotifier_.displayName = 'ConsoleNotifier_';
 
-export const ConsoleNotifier = connectToFlags(FLAGS.CONSOLE_NOTIFICATION)(({ flags, ...props }) => {
+export const ConsoleNotifier = connectToFlags<ConsoleNotifierProps & WithFlagsProps>(
+  FLAGS.CONSOLE_NOTIFICATION,
+)(({ flags, ...props }) => {
   const resources = flags[FLAGS.CONSOLE_NOTIFICATION]
     ? [
         {
@@ -65,13 +72,8 @@ export const ConsoleNotifier = connectToFlags(FLAGS.CONSOLE_NOTIFICATION)(({ fla
     : [];
   return (
     <Firehose resources={resources}>
-      <ConsoleNotifier_ {...(props as ConsoleNotifierProps)} />
+      <ConsoleNotifier_ {...(props as PrivateConsoleNotifierProps)} />
     </Firehose>
   );
 });
 ConsoleNotifier.displayName = 'ConsoleNotifier';
-
-type ConsoleNotifierProps = {
-  obj: FirehoseResult;
-  location: 'BannerTop' | 'BannerBottom' | 'BannerTopBottom';
-};

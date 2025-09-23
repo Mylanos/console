@@ -1,14 +1,13 @@
 import * as React from 'react';
 import * as _ from 'lodash-es';
-import classNames from 'classnames';
-import { Helmet } from 'react-helmet';
-import { Alert, Breadcrumb, BreadcrumbItem } from '@patternfly/react-core';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
+import { NavBar } from '@console/internal/components/utils';
+import { Alert, Content, ContentVariants, PageSection } from '@patternfly/react-core';
 import { safeLoad } from 'js-yaml';
 import { useTranslation } from 'react-i18next';
-import { useLocation, Link } from 'react-router-dom-v5-compat';
 import { breadcrumbsForGlobalConfig } from '../../cluster-settings/global-config';
 
-import PrimaryHeading from '@console/shared/src/components/heading/PrimaryHeading';
 import { K8sResourceKind } from '../../../module/k8s';
 import { AsyncComponent, Firehose, StatusBox } from '../../utils';
 import { patchAlertmanagerConfig, getAlertmanagerYAML } from './alertmanager-utils';
@@ -71,13 +70,13 @@ const AlertmanagerYAMLEditor: React.FC<AlertmanagerYAMLEditorProps> = ({ obj: se
 
   return (
     <>
-      <div className="co-m-nav-title">
-        <p className="help-block">
+      <PageSection hasBodyWrapper={false} className="pf-v6-u-pb-0">
+        <Content component={ContentVariants.p}>
           {t(
             'public~Update this YAML to configure Routes, Receivers, Groupings and other Alertmanager settings.',
           )}
-        </p>
-      </div>
+        </Content>
+      </PageSection>
       <EditAlertmanagerYAML onSave={save} obj={alertmanagerYAML}>
         {errorMsg && (
           <Alert
@@ -108,9 +107,7 @@ const AlertmanagerYAMLEditorWrapper: React.FC<AlertmanagerYAMLEditorWrapperProps
     const { t } = useTranslation();
     return (
       <>
-        <Helmet>
-          <title>{t('public~Alerting')}</title>
-        </Helmet>
+        <DocumentTitle>{t('public~Alerting')}</DocumentTitle>
         <StatusBox {...obj}>
           <AlertmanagerYAMLEditor {...props} obj={obj.data} />
         </StatusBox>
@@ -121,54 +118,27 @@ const AlertmanagerYAMLEditorWrapper: React.FC<AlertmanagerYAMLEditorWrapperProps
 
 const AlertmanagerYAML: React.FC<{}> = () => {
   const { t } = useTranslation();
-  const { pathname: url } = useLocation();
 
-  const configPath = '/monitoring/alertmanagerconfig';
-  const YAMLPath = '/monitoring/alertmanageryaml';
+  const configPath = 'alertmanagerconfig';
+  const YAMLPath = 'alertmanageryaml';
 
   const breadcrumbs = breadcrumbsForGlobalConfig('Alertmanager', configPath);
 
   return (
     <>
-      <div className="pf-v6-c-page__main-breadcrumb">
-        <Breadcrumb className="monitoring-breadcrumbs">
-          <BreadcrumbItem>
-            <Link className="pf-v6-c-breadcrumb__link" to={breadcrumbs[0].path}>
-              {breadcrumbs[0].name}
-            </Link>
-          </BreadcrumbItem>
-          <BreadcrumbItem isActive>{breadcrumbs[1].name}</BreadcrumbItem>
-        </Breadcrumb>
-      </div>
-      <div className="co-m-nav-title co-m-nav-title--detail co-m-nav-title--breadcrumbs">
-        <PrimaryHeading>
-          <div className="co-m-pane__name co-resource-item">
-            <span className="co-resource-item__resource-name" data-test-id="resource-title">
-              {t('public~Alertmanager')}
-            </span>
-          </div>
-        </PrimaryHeading>
-      </div>
-      <ul className="co-m-horizontal-nav__menu">
-        <li
-          className={classNames('co-m-horizontal-nav__menu-item', {
-            'co-m-horizontal-nav-item--active': url === configPath,
-          })}
-        >
-          <Link to={configPath} data-test-id="horizontal-link-details">
-            {t('public~Details')}
-          </Link>
-        </li>
-        <li
-          className={classNames('co-m-horizontal-nav__menu-item', {
-            'co-m-horizontal-nav-item--active': url === YAMLPath,
-          })}
-        >
-          <Link to={YAMLPath} data-test-id="horizontal-link-yaml">
-            {t('public~YAML')}
-          </Link>
-        </li>
-      </ul>
+      <PageHeading breadcrumbs={breadcrumbs} title={t('public~Alertmanager')} />
+      <NavBar
+        pages={[
+          {
+            name: t('public~Details'),
+            href: configPath,
+          },
+          {
+            name: t('public~YAML'),
+            href: YAMLPath,
+          },
+        ]}
+      />
       <Firehose
         resources={[
           {

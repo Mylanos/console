@@ -6,7 +6,9 @@ import {
 } from '@patternfly/react-catalog-view-extension';
 import * as _ from 'lodash';
 import { CatalogItemAttribute } from '@console/dynamic-plugin-sdk';
+import { ResolvedCodeRefProperties } from '@console/dynamic-plugin-sdk/src/types';
 import { FieldLevelHelp } from '@console/internal/components/utils';
+import { alphanumericCompare } from '@console/shared/src/utils/utils';
 import {
   CatalogFilter,
   CatalogFilterCounts,
@@ -17,10 +19,11 @@ import {
 type CatalogFiltersProps = {
   activeFilters: CatalogFilters;
   filterGroupCounts: CatalogFilterCounts;
-  filterGroupMap: { [key: string]: CatalogItemAttribute };
+  filterGroupMap: { [key: string]: ResolvedCodeRefProperties<CatalogItemAttribute> };
   filterGroupsShowAll: { [key: string]: boolean };
   onFilterChange: (filterType: string, id: string, value: boolean) => void;
   onShowAllToggle: (groupName: string) => void;
+  sortFilterGroups?: boolean;
 };
 
 const CatalogFilters: React.FC<CatalogFiltersProps> = ({
@@ -30,19 +33,23 @@ const CatalogFilters: React.FC<CatalogFiltersProps> = ({
   filterGroupsShowAll,
   onFilterChange,
   onShowAllToggle,
+  sortFilterGroups,
 }) => {
-  const sortedActiveFilters = Object.keys(activeFilters)
-    .sort()
-    .reduce<CatalogFilters>((acc, groupName) => {
-      acc[groupName] = activeFilters[groupName];
-      return acc;
-    }, {});
+  const sortedActiveFilters = sortFilterGroups
+    ? Object.keys(activeFilters)
+        .sort()
+        .reduce<CatalogFilters>((acc, groupName) => {
+          acc[groupName] = activeFilters[groupName];
+          return acc;
+        }, {})
+    : Object.keys(activeFilters).reduce<CatalogFilters>((acc, groupName) => {
+        acc[groupName] = activeFilters[groupName];
+        return acc;
+      }, {});
 
   const renderFilterItem = (filter: CatalogFilterItem, filterName: string, groupName: string) => {
     const { label, active } = filter;
     const count = filterGroupCounts[groupName]?.[filterName] ?? 0;
-    // TODO remove when adopting https://github.com/patternfly/patternfly-react/issues/5139
-    const dummyProps = {} as any;
     return (
       <FilterSidePanelCategoryItem
         key={filterName}
@@ -52,7 +59,6 @@ const CatalogFilters: React.FC<CatalogFiltersProps> = ({
           onFilterChange(groupName, filterName, e.target.checked)
         }
         data-test={`${groupName}-${_.kebabCase(filterName)}`}
-        {...dummyProps}
       >
         {label}
       </FilterSidePanelCategoryItem>
@@ -61,11 +67,14 @@ const CatalogFilters: React.FC<CatalogFiltersProps> = ({
 
   const renderFilterGroup = (filterGroup: CatalogFilter, groupName: string) => {
     const filterGroupKeys = Object.keys(filterGroup);
+    const filterGroupItemComparator = filterGroupMap[groupName]?.comparator ?? alphanumericCompare;
     if (filterGroupKeys.length > 0) {
-      const sortedFilterGroup = filterGroupKeys.sort().reduce<CatalogFilter>((acc, filterName) => {
-        acc[filterName] = filterGroup[filterName];
-        return acc;
-      }, {});
+      const sortedFilterGroup = filterGroupKeys
+        .sort(filterGroupItemComparator || alphanumericCompare)
+        .reduce<CatalogFilter>((acc, filterName) => {
+          acc[filterName] = filterGroup[filterName];
+          return acc;
+        }, {});
       return (
         <FilterSidePanelCategory
           key={groupName}

@@ -37,15 +37,10 @@ export const getRandomChars = (len = 6): string => {
     .substr(1, len);
 };
 
-export const isValidUrl = (url: string): boolean => {
-  try {
-    // eslint-disable-next-line no-new
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
+export const isValidUrl = (url: string): boolean => URL.canParse(url);
+
+export const returnIfValidURL = (url: string): string | undefined =>
+  isValidUrl(url) ? url : undefined;
 
 // Recursive helper for getSchemaAtPath
 const recursiveGetSchemaAtPath = (
@@ -117,3 +112,11 @@ export const getTitleForNodeKind = (kindString: string) => {
   }
   return startCase(kindString);
 };
+
+export const parseList = (list: string): string[] =>
+  list
+    .split(',')
+    .map((k) => k.trim())
+    .filter((k) => k);
+
+export const strConcat = (...strs: string[]): string => strs.filter((e) => !!e).join(', ');

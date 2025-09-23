@@ -30,11 +30,9 @@ import {
   InputGroupItem,
 } from '@patternfly/react-core';
 import { ChartLineIcon } from '@patternfly/react-icons/dist/esm/icons/chart-line-icon';
-import classNames from 'classnames';
+import { css } from '@patternfly/react-styles';
 import * as _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useDispatch, useSelector } from 'react-redux';
 import { VictoryPortal } from 'victory-core';
 import {
@@ -301,7 +299,7 @@ const TooltipWrapped: React.FC<TooltipProps> = ({
           y={center.y - TOOLTIP_MAX_HEIGHT / 2}
         >
           <div
-            className={classNames('query-browser__tooltip-wrap', {
+            className={css('query-browser__tooltip-wrap', {
               'query-browser__tooltip-wrap--left': isOnLeft,
             })}
           >
@@ -328,10 +326,7 @@ const TooltipWrapped: React.FC<TooltipProps> = ({
 const Tooltip = withFallback(TooltipWrapped);
 
 const graphContainer = (
-  // Set activateData to false to work around VictoryVoronoiContainer crash (see
-  // https://github.com/FormidableLabs/victory/issues/1314)
   <ChartVoronoiContainer
-    activateData={false}
     labelComponent={<Tooltip />}
     labels={() => ' '}
     mouseFollowTooltips
@@ -952,7 +947,7 @@ const QueryBrowserWrapped: React.FC<QueryBrowserProps> = ({
 
   return (
     <div
-      className={classNames('query-browser__wrapper', {
+      className={css('query-browser__wrapper', {
         'graph-empty-state': isGraphDataEmpty,
         'graph-empty-state__loaded': isGraphDataEmpty && !updating,
       })}
@@ -985,7 +980,7 @@ const QueryBrowserWrapped: React.FC<QueryBrowserProps> = ({
         </div>
       )}
       <div
-        className={classNames('graph-wrapper graph-wrapper--query-browser', {
+        className={css('graph-wrapper graph-wrapper--query-browser', {
           'graph-wrapper--query-browser--with-legend': showLegend && !!formatSeriesTitle,
         })}
       >

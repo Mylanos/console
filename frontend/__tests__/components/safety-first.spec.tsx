@@ -5,6 +5,7 @@ import { mount, ReactWrapper } from 'enzyme';
 import Spy = jasmine.Spy;
 
 import { useSafetyFirst } from '@console/dynamic-plugin-sdk';
+import { waitFor } from '@testing-library/react';
 
 type Props = {
   loader: () => Promise<any>;
@@ -13,7 +14,7 @@ type Props = {
 const warning = 'perform a React state update on an unmounted component.';
 
 describe('When calling setter from `useState()` hook in an unsafe React component', () => {
-  const Unsafe: React.SFC<Props> = (props) => {
+  const Unsafe: React.FCC<Props> = (props) => {
     const [inFlight, setInFlight] = React.useState(true);
 
     const onClick = () => props.loader().then(() => setInFlight(false));
@@ -52,7 +53,7 @@ describe('useSafetyFirst', () => {
   let wrapper: ReactWrapper<Props>;
   let consoleErrorSpy: Spy;
 
-  const Safe: React.SFC<Props> = (props) => {
+  const Safe: React.FCC<Props> = (props) => {
     const [inFlight, setInFlight] = useSafetyFirst(true);
 
     const onClick = () => props.loader().then(() => setInFlight(false));
@@ -76,16 +77,16 @@ describe('useSafetyFirst', () => {
     wrapper = wrapper.setProps({ loader });
     wrapper.find('button').simulate('click');
 
-    // FIXME(alecmerdler): Shouldn't need a `setTimeout` here...
-    setTimeout(() => {
+    waitFor(() => {
       expect(
         consoleErrorSpy.calls
           .all()
           .map((call) => call.args[0] as string)
           .some((text) => text.includes(warning)),
       ).toBe(false);
-      done();
-    }, 500);
+    });
+
+    done();
   });
 
   it('will set React state if mounted (using hook)', (done) => {
@@ -98,8 +99,7 @@ describe('useSafetyFirst', () => {
     wrapper = wrapper.setProps({ loader });
     wrapper.find('button').simulate('click');
 
-    // FIXME(alecmerdler): Shouldn't need a `setTimeout` here...
-    setTimeout(() => {
+    waitFor(() => {
       expect(wrapper.text()).toEqual('Loaded');
       expect(
         consoleErrorSpy.calls
@@ -107,7 +107,8 @@ describe('useSafetyFirst', () => {
           .map((call) => call.args[0] as string)
           .some((text) => text.includes(warning)),
       ).toBe(false);
-      done();
-    }, 500);
+    });
+
+    done();
   });
 });

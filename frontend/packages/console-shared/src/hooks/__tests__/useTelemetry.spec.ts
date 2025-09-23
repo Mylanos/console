@@ -8,7 +8,7 @@ import {
   USER_TELEMETRY_ANALYTICS,
   useUserSettings,
 } from '@console/shared';
-import { testHook } from '../../../../../__tests__/utils/hooks-utils';
+import { testHook } from '@console/shared/src/test-utils/hooks-utils';
 import {
   getClusterProperties,
   updateClusterPropertiesFromTests,
@@ -16,12 +16,28 @@ import {
 } from '../useTelemetry';
 
 jest.mock('@console/dynamic-plugin-sdk', () => ({
-  ...require.requireActual('@console/dynamic-plugin-sdk'),
+  ...jest.requireActual('@console/dynamic-plugin-sdk'),
   useResolvedExtensions: jest.fn(),
 }));
 
 jest.mock('@console/shared/src/hooks/useUserSettings', () => ({
   useUserSettings: jest.fn(),
+}));
+
+const mockUserResource = {};
+
+const exampleReturnValue = {
+  accountMail: undefined,
+  clusterId: undefined,
+  clusterType: undefined,
+  consoleVersion: undefined,
+  organizationId: undefined,
+  path: undefined,
+  userResource: mockUserResource,
+};
+
+jest.mock('@console/internal/components/utils/k8s-get-hook', () => ({
+  useK8sGet: () => [mockUserResource, true],
 }));
 
 const mockUserSettings = useUserSettings as jest.Mock;
@@ -136,8 +152,9 @@ describe('useTelemetry', () => {
     fireTelemetryEvent('test 1');
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toBeCalledWith('test 1', {
-      consoleVersion: undefined,
+      ...exampleReturnValue,
       clusterType: undefined,
+      consoleVersion: undefined,
     });
   });
 
@@ -153,8 +170,9 @@ describe('useTelemetry', () => {
     fireTelemetryEvent('test 2');
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toBeCalledWith('test 2', {
-      consoleVersion: 'x.y.z',
+      ...exampleReturnValue,
       clusterType: 'OSD',
+      consoleVersion: 'x.y.z',
     });
   });
 
@@ -170,10 +188,11 @@ describe('useTelemetry', () => {
     fireTelemetryEvent('test 3', { 'a-string': 'works fine', 'a-boolean': true });
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toBeCalledWith('test 3', {
-      consoleVersion: 'x.y.z',
-      clusterType: 'OSD',
-      'a-string': 'works fine',
+      ...exampleReturnValue,
       'a-boolean': true,
+      'a-string': 'works fine',
+      clusterType: 'OSD',
+      consoleVersion: 'x.y.z',
     });
   });
 
@@ -193,8 +212,9 @@ describe('useTelemetry', () => {
     fireTelemetryEvent('test 4');
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toBeCalledWith('test 4', {
-      consoleVersion: 'x.y.z',
+      ...exampleReturnValue,
       clusterType: 'DEVSANDBOX',
+      consoleVersion: 'x.y.z',
     });
   });
 

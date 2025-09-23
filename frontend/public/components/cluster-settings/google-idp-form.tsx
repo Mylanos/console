@@ -1,23 +1,25 @@
-import * as React from 'react';
-import { Helmet } from 'react-helmet';
+import { useState } from 'react';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom-v5-compat';
 import { ActionGroup, Button } from '@patternfly/react-core';
 
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
 import { SecretModel } from '../../models';
 import { IdentityProvider, k8sCreate, K8sResourceKind, OAuthKind } from '../../module/k8s';
-import { ButtonBar, PageHeading } from '../utils';
+import { ButtonBar } from '../utils';
 import { addIDP, getOAuthResource as getOAuth, redirectToOAuthPage, mockNames } from './';
 import { IDPNameInput } from './idp-name-input';
 
 export const AddGooglePage = () => {
   const navigate = useNavigate();
-  const [inProgress, setInProgress] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState('');
-  const [name, setName] = React.useState('google');
-  const [clientID, setClientID] = React.useState('');
-  const [clientSecret, setClientSecret] = React.useState('');
-  const [hostedDomain, setHostedDomain] = React.useState('');
+  const [inProgress, setInProgress] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [name, setName] = useState('google');
+  const [clientID, setClientID] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+  const [hostedDomain, setHostedDomain] = useState('');
 
   const { t } = useTranslation();
 
@@ -104,25 +106,24 @@ export const AddGooglePage = () => {
 
   return (
     <div className="co-m-pane__form">
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
+      <DocumentTitle>{title}</DocumentTitle>
       <PageHeading
         title={title}
         helpText={t(
           'public~You can use Google integration for users authenticating with Google credentials.',
         )}
       />
-      <div className="co-m-pane__body">
-        <form onSubmit={submit} name="form" className="co-m-pane__body-group">
+      <PaneBody>
+        <form onSubmit={submit} name="form">
           <IDPNameInput value={name} onChange={(e) => setName(e.currentTarget.value)} />
           <div className="form-group">
-            <label className="control-label co-required" htmlFor="client-id">
+            <label className="co-required" htmlFor="client-id">
               {t('public~Client ID')}
             </label>
             <span className="pf-v6-c-form-control">
               <input
                 type="text"
+                aria-label={t('public~Client ID')}
                 onChange={(e) => setClientID(e.currentTarget.value)}
                 value={clientID}
                 id="client-id"
@@ -131,12 +132,13 @@ export const AddGooglePage = () => {
             </span>
           </div>
           <div className="form-group">
-            <label className="control-label co-required" htmlFor="client-secret">
+            <label className="co-required" htmlFor="client-secret">
               {t('public~Client secret')}
             </label>
             <span className="pf-v6-c-form-control">
               <input
                 type="password"
+                aria-label={t('public~Client secret')}
                 onChange={(e) => setClientSecret(e.currentTarget.value)}
                 value={clientSecret}
                 id="client-secret"
@@ -145,12 +147,13 @@ export const AddGooglePage = () => {
             </span>
           </div>
           <div className="form-group">
-            <label className="control-label co-required" htmlFor="hosted-domain">
+            <label className="co-required" htmlFor="hosted-domain">
               {t('public~Hosted domain')}
             </label>
             <span className="pf-v6-c-form-control">
               <input
                 type="text"
+                aria-label={t('public~Hosted domain')}
                 onChange={(e) => setHostedDomain(e.currentTarget.value)}
                 value={hostedDomain}
                 id="hosted-domain"
@@ -173,7 +176,7 @@ export const AddGooglePage = () => {
             </ActionGroup>
           </ButtonBar>
         </form>
-      </div>
+      </PaneBody>
     </div>
   );
 };

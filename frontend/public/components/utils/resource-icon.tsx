@@ -1,5 +1,5 @@
 import * as React from 'react';
-import * as classNames from 'classnames';
+import { css } from '@patternfly/react-styles';
 import * as _ from 'lodash-es';
 
 import { getReference } from '@console/dynamic-plugin-sdk/src/utils/k8s';
@@ -10,7 +10,7 @@ import { kindToAbbr } from '../../module/k8s/get-resources';
 
 const MEMO = {};
 
-export const ResourceIcon: React.SFC<ResourceIconProps> = ({
+export const ResourceIcon: React.FCC<ResourceIconProps> = ({
   className,
   groupVersionKind,
   kind,
@@ -27,7 +27,7 @@ export const ResourceIcon: React.SFC<ResourceIconProps> = ({
   const kindObj = modelFor(kindReference);
   const kindStr = kindObj?.kind ?? kindReference;
   const backgroundColor = _.get(kindObj, 'color', undefined);
-  const klass = classNames(`co-m-resource-icon co-m-resource-${kindStr.toLowerCase()}`, className);
+  const klass = css(`co-m-resource-icon co-m-resource-${kindStr.toLowerCase()}`, className);
   const iconLabel = (kindObj && kindObj.abbr) || kindToAbbr(kindStr);
 
   const rendered = (
@@ -50,7 +50,7 @@ export type ResourceNameProps = {
   name: string;
 };
 
-export const ResourceName: React.SFC<ResourceNameProps> = (props) => (
+export const ResourceName: React.FCC<ResourceNameProps> = (props) => (
   <span className="co-resource-item">
     <ResourceIcon kind={props.kind} />{' '}
     <span className="co-resource-item__resource-name">{props.name}</span>

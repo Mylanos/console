@@ -1,10 +1,10 @@
 import { Given, When, Then } from 'cypress-cucumber-preprocessor/steps';
+import { guidedTour } from '@console/cypress-integration-tests/views/guided-tour';
 import { modal } from '@console/cypress-integration-tests/views/modal';
 import { nav } from '@console/cypress-integration-tests/views/nav';
 import {
   devNavigationMenu,
   switchPerspective,
-  addOptions,
   catalogCards,
   catalogTypes,
 } from '@console/dev-console/integration-tests/support/constants';
@@ -18,10 +18,16 @@ import {
   catalogPage,
   addPage,
 } from '@console/dev-console/integration-tests/support/pages';
+import { checkDeveloperPerspective } from '@console/dev-console/integration-tests/support/pages/functions/checkDeveloperPerspective';
 
 Given('user is at developer perspective', () => {
+  checkDeveloperPerspective();
   perspective.switchTo(switchPerspective.Developer);
   // cy.testA11y('Developer perspective with guider tour modal');
+});
+
+Given('user is at administrator perspective', () => {
+  perspective.switchTo(switchPerspective.Administrator);
 });
 
 Given('user has created or selected namespace {string}', (projectName: string) => {
@@ -31,6 +37,11 @@ Given('user has created or selected namespace {string}', (projectName: string) =
 
 Given('user is at the Topology page', () => {
   navigateTo(devNavigationMenu.Topology);
+  topologyPage.verifyTopologyPage();
+});
+
+Given('user is at the Topology page in admin view', () => {
+  cy.byLegacyTestID('topology-header').should('exist').click({ force: true });
   topologyPage.verifyTopologyPage();
 });
 
@@ -85,8 +96,12 @@ When('user selects {string} card from add page', (cardName: string) => {
   addPage.selectCardFromOptions(cardName);
 });
 
-Given('user is at Developer Catalog page', () => {
-  addPage.selectCardFromOptions(addOptions.DeveloperCatalog);
+Given('user is at Software Catalog page', () => {
+  cy.byLegacyTestID('developer-catalog-header').should('exist').click({ force: true });
+});
+
+When('user selects Helm Charts type from Software Catalog page', () => {
+  catalogPage.selectCatalogType(catalogTypes.HelmCharts);
 });
 
 When('user switches to the {string} tab', (tab: string) => {
@@ -98,11 +113,13 @@ When('user clicks on the link for the {string} of helm release', (resource: stri
 });
 
 Given('user is at Add page', () => {
+  checkDeveloperPerspective();
   navigateTo(devNavigationMenu.Add);
 });
 
 Given('user has logged in as admin user', () => {
   cy.login();
   perspective.switchTo(switchPerspective.Administrator);
+  guidedTour.close();
   nav.sidenav.switcher.shouldHaveText(switchPerspective.Administrator);
 });

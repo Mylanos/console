@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import PodRingSet from '@console/shared/src/components/pod/PodRingSet';
-import { AddHealthChecks, EditHealthChecks } from '@console/app/src/actions/modify-health-checks';
 import {
   ActionServiceProvider,
   ActionMenu,
@@ -9,6 +8,7 @@ import {
   LazyActionMenu,
   usePrometheusGate,
 } from '@console/shared';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import { DeploymentKind, K8sResourceKind, referenceForModel, referenceFor } from '../module/k8s';
 import { ResourceEventStream } from './events';
 import { DetailsPage, ListPage, Table, RowFunctionArgs } from './factory';
@@ -17,8 +17,6 @@ import { WorkloadTableRow, WorkloadTableHeader } from './workload-table';
 
 import {
   AsyncComponent,
-  Kebab,
-  KebabAction,
   ContainerTable,
   ResourceSummary,
   SectionHeading,
@@ -27,18 +25,8 @@ import {
   RuntimeClass,
 } from './utils';
 import { VolumesTable } from './volumes-table';
-import { StatefulSetModel } from '../models';
 import { PodDisruptionBudgetField } from '@console/app/src/components/pdb/PodDisruptionBudgetField';
-
-const { AddStorage, common, ModifyCount } = Kebab.factory;
-export const menuActions: KebabAction[] = [
-  AddHealthChecks,
-  ModifyCount,
-  AddStorage,
-  ...Kebab.getExtensionsActionsForKind(StatefulSetModel),
-  EditHealthChecks,
-  ...common,
-];
+import { DescriptionList, Grid, GridItem } from '@patternfly/react-core';
 
 const kind = 'StatefulSet';
 
@@ -58,27 +46,29 @@ const StatefulSetDetails: React.FC<StatefulSetDetailsProps> = ({ obj: ss }) => {
   const { t } = useTranslation();
   return (
     <>
-      <div className="co-m-pane__body">
+      <PaneBody>
         <SectionHeading text={t('public~StatefulSet details')} />
         <PodRingSet key={ss.metadata.uid} obj={ss} path="/spec/replicas" />
-        <div className="row">
-          <div className="col-md-6">
+        <Grid hasGutter>
+          <GridItem md={6}>
             <ResourceSummary resource={ss} showPodSelector showNodeSelector showTolerations>
               <RuntimeClass obj={ss} />
             </ResourceSummary>
-          </div>
-          <dl className="co-m-pane__details">
-            <PodDisruptionBudgetField obj={ss} />
-          </dl>
-        </div>
-      </div>
-      <div className="co-m-pane__body">
+          </GridItem>
+          <GridItem md={6}>
+            <DescriptionList>
+              <PodDisruptionBudgetField obj={ss} />
+            </DescriptionList>
+          </GridItem>
+        </Grid>
+      </PaneBody>
+      <PaneBody>
         <SectionHeading text={t('public~Containers')} />
         <ContainerTable containers={ss.spec.template.spec.containers} />
-      </div>
-      <div className="co-m-pane__body">
+      </PaneBody>
+      <PaneBody>
         <VolumesTable resource={ss} heading={t('public~Volumes')} />
-      </div>
+      </PaneBody>
     </>
   );
 };

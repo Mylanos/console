@@ -7,6 +7,8 @@ import {
   DataListItemRow,
   DataListCell,
   DataListItemCells,
+  Grid,
+  GridItem,
 } from '@patternfly/react-core';
 import { useTranslation } from 'react-i18next';
 import { ColumnLayout, ManagedColumn } from '@console/dynamic-plugin-sdk';
@@ -62,7 +64,7 @@ const DataListRow: React.FC<DataListRowProps> = ({
 
 export const ColumnManagementModal: React.FC<
   ColumnManagementModalProps & WithUserSettingsCompatibilityProps<object>
-> = ({ cancel, close, columnLayout, setUserSettingState: setTableColumns }) => {
+> = ({ cancel, close, columnLayout, setUserSettingState: setTableColumns, noLimit }) => {
   const { t } = useTranslation();
   const defaultColumns = columnLayout.columns.filter((column) => column.id && !column.additional);
   const additionalColumns = columnLayout.columns.filter((column) => column.additional);
@@ -108,62 +110,66 @@ export const ColumnManagementModal: React.FC<
     <form onSubmit={submit} name="form" className="modal-content">
       <ModalTitle className="modal-header">{t('public~Manage columns')}</ModalTitle>
       <ModalBody>
-        <div className="co-m-form-row">
-          <p>{t('public~Selected columns will appear in the table.')}</p>
-        </div>
-        <div className="co-m-form-row">
-          <Alert
-            className="co-alert"
-            isInline
-            title={t('public~You can select up to {{MAX_VIEW_COLS}} columns', { MAX_VIEW_COLS })}
-            variant="info"
-          >
-            {!columnLayout?.showNamespaceOverride &&
-              t('public~The namespace column is only shown when in "All projects"')}
-          </Alert>
-        </div>
-        <div className="row co-m-form-row">
-          <div className="col-sm-12">
-            <span className="col-sm-6">
-              <label className="control-label">
-                {t('public~Default {{resourceKind}} columns', { resourceKind: columnLayout.type })}
-              </label>
-              <DataList
-                aria-label={t('public~Default column list')}
-                id="defalt-column-management"
-                isCompact
+        {!noLimit && (
+          <>
+            <div className="co-m-form-row">
+              <p>{t('public~Selected columns will appear in the table.')}</p>
+            </div>
+            <div className="co-m-form-row">
+              <Alert
+                className="co-alert"
+                isInline
+                title={t('public~You can select up to {{MAX_VIEW_COLS}} columns', {
+                  MAX_VIEW_COLS,
+                })}
+                variant="info"
               >
-                {defaultColumns.map((defaultColumn) => (
-                  <DataListRow
-                    key={defaultColumn.id}
-                    onChange={onColumnChange}
-                    disableUncheckedRow={areMaxColumnsDisplayed}
-                    column={defaultColumn}
-                    checkedColumns={checkedColumns}
-                  />
-                ))}
-              </DataList>
-            </span>
-            <span className="col-sm-6">
-              <label className="control-label">{t('public~Additional columns')}</label>
-              <DataList
-                aria-label={t('public~Additional column list')}
-                id="additional-column-management"
-                isCompact
-              >
-                {additionalColumns.map((additionalColumn) => (
-                  <DataListRow
-                    key={additionalColumn.id}
-                    onChange={onColumnChange}
-                    disableUncheckedRow={areMaxColumnsDisplayed}
-                    column={additionalColumn}
-                    checkedColumns={checkedColumns}
-                  />
-                ))}
-              </DataList>
-            </span>
-          </div>
-        </div>
+                {!columnLayout?.showNamespaceOverride &&
+                  t('public~The namespace column is only shown when in "All projects"')}
+              </Alert>
+            </div>
+          </>
+        )}
+        <Grid hasGutter className="co-m-form-row">
+          <GridItem sm={6}>
+            <label>
+              {t('public~Default {{resourceKind}} columns', { resourceKind: columnLayout.type })}
+            </label>
+            <DataList
+              aria-label={t('public~Default column list')}
+              id="defalt-column-management"
+              isCompact
+            >
+              {defaultColumns.map((defaultColumn) => (
+                <DataListRow
+                  key={defaultColumn.id}
+                  onChange={onColumnChange}
+                  disableUncheckedRow={!noLimit && areMaxColumnsDisplayed}
+                  column={defaultColumn}
+                  checkedColumns={checkedColumns}
+                />
+              ))}
+            </DataList>
+          </GridItem>
+          <GridItem sm={6}>
+            <label>{t('public~Additional columns')}</label>
+            <DataList
+              aria-label={t('public~Additional column list')}
+              id="additional-column-management"
+              isCompact
+            >
+              {additionalColumns.map((additionalColumn) => (
+                <DataListRow
+                  key={additionalColumn.id}
+                  onChange={onColumnChange}
+                  disableUncheckedRow={!noLimit && areMaxColumnsDisplayed}
+                  column={additionalColumn}
+                  checkedColumns={checkedColumns}
+                />
+              ))}
+            </DataList>
+          </GridItem>
+        </Grid>
       </ModalBody>
       <ModalSubmitFooter
         inProgress={false}
@@ -201,4 +207,5 @@ export type ColumnManagementModalProps = {
   cancel?: () => void;
   close?: () => void;
   columnLayout: ColumnLayout;
+  noLimit?: boolean;
 };

@@ -6,7 +6,7 @@
   }
 
   margin-top: var(--pf-t--global--spacer--lg);
-  margin-left: calc(var(--pf-t--global--spacer--lg) - var(--pf-t--global--spacer--sm));
+  margin-left: var(--odc-add-card-item-margin-horizontal);
 
   &__icon {
     height: var(--pf-t--global--font--size--lg);
@@ -40,11 +40,5 @@
   a {
     padding-left: 0;
     text-decoration: none;
-  }
-}
-
-:root:where(.pf-v6-theme-dark) .odc-add-card-item {
-  &__img-icon {
-    filter: brightness(1.5) invert(1) hue-rotate(180deg) saturate(4);
   }
 }

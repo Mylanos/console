@@ -6,14 +6,21 @@ import { BanIcon } from '@patternfly/react-icons/dist/esm/icons/ban-icon';
 import { PendingIcon } from '@patternfly/react-icons/dist/esm/icons/pending-icon';
 import { SyncAltIcon } from '@patternfly/react-icons/dist/esm/icons/sync-alt-icon';
 
-import { ExternalLink } from './utils/link';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import { resourcePath } from './utils/resource-link';
 import { fromNow } from './utils/datetime';
 import { K8sResourceKind } from '../module/k8s';
 import { getBuildNumber } from '../module/k8s/builds';
 import { GreenCheckCircleIcon, RedExclamationCircleIcon } from '@console/shared';
 
-const getStages = (status): any[] => (status && status.stages) || [];
+type BuildStageData = {
+  id: string;
+  name: string;
+  status: string;
+  startTimeMillis: number;
+};
+
+const getStages = (status): BuildStageData[] => (status && status.stages) || [];
 const getJenkinsStatus = (resource: K8sResourceKind) => {
   const json = _.get(resource, ['metadata', 'annotations', 'openshift.io/jenkins-status-json']);
   if (!json) {
@@ -29,7 +36,7 @@ export const getJenkinsLogURL = (resource: K8sResourceKind): string =>
 export const getJenkinsBuildURL = (resource: K8sResourceKind): string =>
   _.get(resource, ['metadata', 'annotations', 'openshift.io/jenkins-build-uri']);
 
-const BuildSummaryStatusIcon: React.SFC<BuildSummaryStatusIconProps> = ({ status }) => {
+const BuildSummaryStatusIcon: React.FCC<BuildSummaryStatusIconProps> = ({ status }) => {
   const statusClass = _.lowerCase(status);
   const icon = {
     new: '',
@@ -47,19 +54,15 @@ const BuildSummaryStatusIcon: React.SFC<BuildSummaryStatusIconProps> = ({ status
   ) : null;
 };
 
-export const BuildPipelineLogLink: React.SFC<BuildPipelineLogLinkProps> = ({ obj }) => {
+export const BuildPipelineLogLink: React.FCC<BuildPipelineLogLinkProps> = ({ obj }) => {
   const { t } = useTranslation();
   const link = getJenkinsLogURL(obj);
   return link ? (
-    <ExternalLink
-      href={link}
-      text={t('public~View logs')}
-      additionalClassName="build-pipeline__log-link"
-    />
+    <ExternalLink href={link} text={t('public~View logs')} className="build-pipeline__log-link" />
   ) : null;
 };
 
-const StagesNotStarted: React.SFC = () => {
+const StagesNotStarted: React.FCC<{}> = () => {
   const { t } = useTranslation();
   return (
     <div className="build-pipeline__stage build-pipeline__stage--none">
@@ -68,11 +71,13 @@ const StagesNotStarted: React.SFC = () => {
   );
 };
 
-const BuildSummaryTimestamp: React.SFC<BuildSummaryTimestampProps> = ({ timestamp }) => (
-  <span className="build-pipeline__timestamp text-muted">{fromNow(timestamp)}</span>
+const BuildSummaryTimestamp: React.FCC<BuildSummaryTimestampProps> = ({ timestamp }) => (
+  <span className="build-pipeline__timestamp pf-v6-u-text-color-subtle">
+    {fromNow(typeof timestamp === 'string' ? timestamp : timestamp)}
+  </span>
 );
 
-const BuildPipelineSummary: React.SFC<BuildPipelineSummaryProps> = ({ obj }) => {
+const BuildPipelineSummary: React.FCC<BuildPipelineSummaryProps> = ({ obj }) => {
   const { name, namespace } = obj.metadata;
   const buildNumber = getBuildNumber(obj);
   const path: string = resourcePath(obj.kind, name, namespace);
@@ -91,7 +96,7 @@ const BuildPipelineSummary: React.SFC<BuildPipelineSummaryProps> = ({ obj }) => 
   );
 };
 
-const BuildAnimation: React.SFC<BuildAnimationProps> = ({ status }) => (
+const BuildAnimation: React.FCC<BuildAnimationProps> = ({ status }) => (
   <div className={`build-pipeline__status-bar build-pipeline__status-bar--${_.kebabCase(status)}`}>
     <div className="build-pipeline__animation-line" />
     <div className="build-pipeline__animation-circle">
@@ -104,7 +109,7 @@ const BuildAnimation: React.SFC<BuildAnimationProps> = ({ status }) => (
   </div>
 );
 
-const JenkinsInputUrl: React.SFC<JenkinsInputUrlProps> = ({ obj, stage }) => {
+const JenkinsInputUrl: React.FCC<JenkinsInputUrlProps> = ({ obj, stage }) => {
   const pending = stage.status === 'PAUSED_PENDING_INPUT';
   const { t } = useTranslation();
 
@@ -114,17 +119,19 @@ const JenkinsInputUrl: React.SFC<JenkinsInputUrlProps> = ({ obj, stage }) => {
 
   const buildUrl = getJenkinsBuildURL(obj);
   return (
-    <div className="build-pipeline__stage-actions text-muted">
+    <div className="build-pipeline__stage-actions pf-v6-u-text-color-subtle">
       <ExternalLink href={buildUrl} text={t('public~Input required')} />
     </div>
   );
 };
 
-const BuildStageTimestamp: React.SFC<BuildStageTimestampProps> = ({ timestamp }) => (
-  <div className="build-pipeline__stage-time text-muted">{fromNow(timestamp)}</div>
+const BuildStageTimestamp: React.FCC<BuildStageTimestampProps> = ({ timestamp }) => (
+  <div className="build-pipeline__stage-time pf-v6-u-text-color-subtle">
+    {fromNow(typeof timestamp === 'string' ? timestamp : timestamp)}
+  </div>
 );
 
-const BuildStageName: React.SFC<BuildStageNameProps> = ({ name }) => {
+const BuildStageName: React.FCC<BuildStageNameProps> = ({ name }) => {
   return (
     <div title={name} className="build-pipeline__stage-name">
       {name}
@@ -132,20 +139,20 @@ const BuildStageName: React.SFC<BuildStageNameProps> = ({ name }) => {
   );
 };
 
-const BuildStage: React.SFC<BuildStageProps> = ({ obj, stage }) => {
+const BuildStage: React.FCC<BuildStageProps> = ({ obj, stage }) => {
   return (
     <div className="build-pipeline__stage">
       <div className="build-pipeline__stage-column">
         <BuildStageName name={stage.name} />
         <BuildAnimation status={stage.status} />
         <JenkinsInputUrl obj={obj} stage={stage} />
-        <BuildStageTimestamp timestamp={stage.startTimeMillis} />
+        <BuildStageTimestamp timestamp={stage.startTimeMillis.toString()} />
       </div>
     </div>
   );
 };
 
-export const BuildPipeline: React.SFC<BuildPipelineProps> = ({ obj }) => {
+export const BuildPipeline: React.FCC<BuildPipelineProps> = ({ obj }) => {
   const jenkinsStatus: any = getJenkinsStatus(obj);
   const stages = getStages(jenkinsStatus);
   return (
@@ -170,7 +177,7 @@ export type BuildPipelineProps = {
 
 export type BuildStageProps = {
   obj: K8sResourceKind;
-  stage: any;
+  stage: BuildStageData;
 };
 
 export type BuildAnimationProps = {
@@ -186,7 +193,7 @@ export type BuildSummaryStatusIconProps = {
 };
 
 export type BuildStageTimestampProps = {
-  timestamp: string;
+  timestamp: string | undefined;
 };
 
 export type BuildPipelineLogLinkProps = {
@@ -199,7 +206,7 @@ export type BuildPipelineLinkProps = {
 };
 
 export type BuildSummaryTimestampProps = {
-  timestamp: string;
+  timestamp: string | undefined;
 };
 
 export type BuildStageNameProps = {

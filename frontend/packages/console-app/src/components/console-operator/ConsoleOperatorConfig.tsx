@@ -54,6 +54,7 @@ import {
   GreenCheckCircleIcon,
   YellowExclamationTriangleIcon,
 } from '@console/shared';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import {
   boolComparator,
   localeComparator,
@@ -226,7 +227,7 @@ const ConsolePluginsTable: React.FC<ConsolePluginsTableProps> = ({ obj, rows, lo
   return !loaded ? (
     <LoadingBox />
   ) : (
-    <div className="co-m-pane__body">
+    <PaneBody>
       {obj.spec?.managementState === 'Unmanaged' && (
         <Alert
           className="co-alert"
@@ -239,10 +240,7 @@ const ConsolePluginsTable: React.FC<ConsolePluginsTableProps> = ({ obj, rows, lo
       )}
       <RequireCreatePermission model={ConsolePluginModel}>
         <div className="co-m-pane__createLink--no-title">
-          <Link
-            className="co-m-primary-action"
-            to={`/k8s/cluster/${consolePluginConcatenatedGVK}/~new`}
-          >
+          <Link to={`/k8s/cluster/${consolePluginConcatenatedGVK}/~new`}>
             <Button variant="primary" id="yaml-create" data-test="item-create">
               {t('public~Create {{label}}', { label: t(ConsolePluginModel.label) })}
             </Button>
@@ -250,7 +248,11 @@ const ConsolePluginsTable: React.FC<ConsolePluginsTableProps> = ({ obj, rows, lo
         </div>
       </RequireCreatePermission>
       {rows.length ? (
-        <Table aria-label="console plugins table" ouiaId="ConsolePluginsTable">
+        <Table
+          aria-label="console plugins table"
+          ouiaId="ConsolePluginsTable"
+          data-test="console-plugins-table"
+        >
           <Thead>
             <Tr>
               {columns.map(({ id, name, sortable }, columnIndex) => (
@@ -264,22 +266,26 @@ const ConsolePluginsTable: React.FC<ConsolePluginsTableProps> = ({ obj, rows, lo
             {sortedRows.map(
               ({ name, version, description, status, enabled, errorMessage, hasCSPViolations }) => (
                 <Tr key={name}>
-                  <Td dataLabel={columns[0].id}>
+                  <Td dataLabel={columns[0].id} data-test={`${name}-name`}>
                     {!developmentMode ? (
                       <ResourceLink groupVersionKind={consolePluginGVK} name={name} hideIcon />
                     ) : (
                       name
                     )}
                   </Td>
-                  <Td dataLabel={columns[1].id}>{version || DASH}</Td>
-                  <Td dataLabel={columns[2].id}>{description || DASH}</Td>
-                  <Td dataLabel={columns[3].id}>
+                  <Td dataLabel={columns[1].id} data-test={`${name}-version`}>
+                    {version || DASH}
+                  </Td>
+                  <Td dataLabel={columns[2].id} data-test={`${name}-description`}>
+                    {description || DASH}
+                  </Td>
+                  <Td dataLabel={columns[3].id} data-test={`${name}-status`}>
                     <ConsolePluginStatus status={status} errorMessage={errorMessage} />
                   </Td>
-                  <Td dataLabel={columns[4].id}>
+                  <Td dataLabel={columns[4].id} data-test={`${name}-enabled`}>
                     <ConsolePluginEnabledStatus pluginName={name} enabled={enabled} />
                   </Td>
-                  <Td dataLabel={columns[5].id}>
+                  <Td dataLabel={columns[5].id} data-test={`${name}-csp-violations`}>
                     <ConsolePluginCSPStatus hasViolations={hasCSPViolations ?? false} />
                   </Td>
                 </Tr>
@@ -290,7 +296,7 @@ const ConsolePluginsTable: React.FC<ConsolePluginsTableProps> = ({ obj, rows, lo
       ) : (
         <EmptyBox label={t('console-app~Console plugins')} />
       )}
-    </div>
+    </PaneBody>
   );
 };
 

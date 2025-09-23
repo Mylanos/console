@@ -1,11 +1,19 @@
 /* eslint-disable @typescript-eslint/no-use-before-define, tsdoc/syntax */
 import * as _ from 'lodash-es';
-import * as React from 'react';
-import * as classNames from 'classnames';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { css } from '@patternfly/react-styles';
 import * as PropTypes from 'prop-types';
 import { Link, useParams } from 'react-router-dom-v5-compat';
-import { Helmet } from 'react-helmet';
-import { Label, LabelGroup, Button, ButtonSize, ButtonVariant } from '@patternfly/react-core';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
+import {
+  Label,
+  LabelGroup,
+  Button,
+  ButtonSize,
+  ButtonVariant,
+  PageSection,
+  Flex,
+} from '@patternfly/react-core';
 
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -24,20 +32,21 @@ import { WSFactory } from '../module/ws-factory';
 import { EventModel, NodeModel } from '../models';
 import { connectToFlags } from '../reducers/connectToFlags';
 import { FLAGS } from '@console/shared/src/constants';
+import { PageHeading } from '@console/shared/src/components/heading/PageHeading';
+import { ConsoleSelect } from '@console/internal/components/utils/console-select';
 import {
-  Dropdown,
   Loading,
   ConsoleEmptyState,
-  PageHeading,
   ResourceIcon,
   ResourceLink,
   resourcePathFromModel,
-  Timestamp,
   TogglePlay,
 } from './utils';
+import { Timestamp } from '@console/shared/src/components/datetime/Timestamp';
 import { EventStreamList } from './utils/event-stream';
 import { ActionMenu, ActionMenuVariant, ActionServiceProvider } from '@console/shared';
 import ActionMenuItem from '@console/shared/src/components/actions/menu/ActionMenuItem';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 
 const maxMessages = 500;
 const flushInterval = 500;
@@ -87,7 +96,7 @@ const kindFilter = (reference, { involvedObject }) => {
 };
 
 const Actions = ({ actions, options, list, cache, index }) => {
-  React.useEffect(() => {
+  useEffect(() => {
     // Actions contents will render after the initial row height calculation,
     // so recompute the row height.
     cache.clear(index);
@@ -131,7 +140,7 @@ const Inner = connectToFlags(FLAGS.CAN_LIST_NODE)((props) => {
 
   return (
     <div
-      className={classNames('co-sysevent', {
+      className={css('co-sysevent', {
         'co-sysevent--warning': isWarning,
       })}
       data-test={isWarning ? 'event-warning' : 'event'}
@@ -151,7 +160,7 @@ const Inner = connectToFlags(FLAGS.CAN_LIST_NODE)((props) => {
             />
             {obj.namespace && (
               <ResourceLink
-                className="co-sysevent__resourcelink hidden-xs"
+                className="co-sysevent__resourcelink pf-v6-u-display-none pf-v6-u-display-block-on-sm"
                 kind="Namespace"
                 name={obj.namespace}
               />
@@ -159,7 +168,7 @@ const Inner = connectToFlags(FLAGS.CAN_LIST_NODE)((props) => {
             {lastTime && <Timestamp className="co-sysevent__timestamp" timestamp={lastTime} />}
           </div>
           <div className="co-sysevent__details">
-            <small className="co-sysevent__source">
+            <span className="pf-v6-u-font-size-xs co-sysevent__source">
               {component !== 'kubelet' &&
                 t('public~Generated from {{ sourceComponent }}', {
                   sourceComponent: component,
@@ -178,21 +187,21 @@ const Inner = connectToFlags(FLAGS.CAN_LIST_NODE)((props) => {
                   sourceComponent: component,
                   sourceHost: source.host,
                 })}
-            </small>
+            </span>
             <div className="co-sysevent__count-and-actions">
               {count > 1 && firstTime && (
                 <Trans ns="public">
-                  <small className="co-sysevent__count text-secondary">
+                  <span className="pf-v6-u-font-size-xs pf-v6-u-text-color-subtle co-sysevent__count">
                     {{ eventCount: count }} times in the last{' '}
                     <Timestamp timestamp={firstTime} simple={true} omitSuffix={true} />
-                  </small>
+                  </span>
                 </Trans>
               )}
               {count > 1 && !firstTime && (
                 <Trans ns="public">
-                  <small className="co-sysevent__count text-secondary">
+                  <span className="pf-v6-u-font-size-xs pf-v6-u-text-color-subtle co-sysevent__count">
                     {{ eventCount: count }} times
-                  </small>
+                  </span>
                 </Trans>
               )}
               <ActionServiceProvider context={{ [referenceFor(event)]: event }}>
@@ -220,10 +229,10 @@ const Inner = connectToFlags(FLAGS.CAN_LIST_NODE)((props) => {
 
 export const EventsList = (props) => {
   const { t } = useTranslation();
-  const [type, setType] = React.useState('all');
-  const [textFilter, setTextFilter] = React.useState('');
+  const [type, setType] = useState('all');
+  const [textFilter, setTextFilter] = useState('');
   const { ns } = useParams();
-  const [selected, setSelected] = React.useState(new Set([]));
+  const [selected, setSelected] = useState(new Set([]));
   const eventTypes = {
     all: t('public~All types'),
     normal: t('public~Normal'),
@@ -252,16 +261,15 @@ export const EventsList = (props) => {
 
   return (
     <>
-      <PageHeading detail={true} title={props.title}>
-        <div className="co-search-group">
+      <PageHeading title={props.title} />
+      <PageSection>
+        <Flex>
           <ResourceListDropdown
             onChange={toggleSelected}
             selected={Array.from(selected)}
             clearSelection={clearSelection}
-            className="co-search-group__resource"
           />
-          <Dropdown
-            className="co-search-group__resource"
+          <ConsoleSelect
             items={eventTypes}
             onChange={(v) => setType(v)}
             selectedKey={type}
@@ -272,30 +280,29 @@ export const EventsList = (props) => {
             label={t('public~Events by name or message')}
             onChange={(_event, val) => setTextFilter(val || '')}
           />
-        </div>
-        <div className="form-group">
-          {selected.size > 0 && (
-            <LabelGroup
-              key="resources-category"
-              categoryName={t('public~Resource')}
-              defaultIsOpen={false}
-              collapsedText={t('public~{{numRemaining}} more', { numRemaining: '${remaining}' })}
-              expandedText={t('public~Show less')}
-              isClosable
-              onClick={clearSelection}
-            >
-              {[...selected].map((chip) => {
-                return (
-                  <Label variant="outline" key={chip} onClose={() => removeResource(chip)}>
-                    <ResourceIcon kind={chip} />
-                    {kindForReference(chip)}
-                  </Label>
-                );
-              })}
-            </LabelGroup>
-          )}
-        </div>
-      </PageHeading>
+        </Flex>
+        {selected.size > 0 && (
+          <LabelGroup
+            key="resources-category"
+            categoryName={t('public~Resource')}
+            defaultIsOpen={false}
+            collapsedText={t('public~{{numRemaining}} more', { numRemaining: '${remaining}' })}
+            expandedText={t('public~Show less')}
+            isClosable
+            onClick={clearSelection}
+            className="pf-v6-u-mt-md"
+          >
+            {[...selected].map((chip) => {
+              return (
+                <Label variant="outline" key={chip} onClose={() => removeResource(chip)}>
+                  <ResourceIcon kind={chip} />
+                  {kindForReference(chip)}
+                </Label>
+              );
+            })}
+          </LabelGroup>
+        )}
+      </PageSection>
       <EventStream
         {...props}
         namespace={ns}
@@ -343,9 +350,7 @@ export const EventStreamPage = withStartGuide(({ noProjectsAvailable, ...rest })
   const title = t('public~Events');
   return (
     <>
-      <Helmet>
-        <title>{title}</title>
-      </Helmet>
+      <DocumentTitle>{title}</DocumentTitle>
       <EventsList
         {...rest}
         autoFocus={!noProjectsAvailable}
@@ -367,18 +372,18 @@ const EventStream = ({
   textFilter,
 }) => {
   const { t } = useTranslation();
-  const [active, setActive] = React.useState(true);
-  const [sortedEvents, setSortedEvents] = React.useState([]);
-  const [error, setError] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const ws = React.useRef(null);
+  const [active, setActive] = useState(true);
+  const [sortedEvents, setSortedEvents] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const ws = useRef(null);
 
-  const filteredEvents = React.useMemo(() => {
+  const filteredEvents = useMemo(() => {
     return filterEvents(sortedEvents, { kind, type, filter, textFilter }).slice(0, maxMessages);
   }, [sortedEvents, kind, type, filter, textFilter]);
 
   // Handle websocket setup and teardown when dependent props change
-  React.useEffect(() => {
+  useEffect(() => {
     ws.current?.destroy();
     if (!mock) {
       const webSocketID = `${namespace || 'all'}-sysevents`;
@@ -447,7 +452,7 @@ const EventStream = ({
   }, [namespace, fieldSelector, mock, t]);
 
   // Pause/unpause the websocket when the active state changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (active) {
       ws.current?.unpause();
     } else {
@@ -476,7 +481,7 @@ const EventStream = ({
     statusBtnTxt = (
       <span className="co-sysevent-stream__connection-error">
         {_.isString(error)
-          ? t('public~Error connecting to event stream: { error }', {
+          ? t('public~Error connecting to event stream: {{ error }}', {
               error,
             })
           : t('public~Error connecting to event stream')}
@@ -492,7 +497,7 @@ const EventStream = ({
     statusBtnTxt = <span>{t('public~Event stream is paused.')}</span>;
   }
 
-  const klass = classNames('co-sysevent-stream__timeline', {
+  const klass = css('co-sysevent-stream__timeline', {
     'co-sysevent-stream__timeline--empty': !allCount || !count,
   });
   const messageCount =
@@ -501,11 +506,14 @@ const EventStream = ({
       : t('public~Showing most recent {{count}} event', { count });
 
   return (
-    <div className="co-m-pane__body">
+    <PaneBody>
       <div className="co-sysevent-stream">
         <div className="co-sysevent-stream__status">
           <div className="co-sysevent-stream__timeline__btn-text">{statusBtnTxt}</div>
-          <div className="co-sysevent-stream__totals text-secondary" data-test="event-totals">
+          <div
+            className="co-sysevent-stream__totals pf-v6-u-text-color-subtle"
+            data-test="event-totals"
+          >
             {messageCount}
           </div>
         </div>
@@ -523,7 +531,7 @@ const EventStream = ({
         {count > 0 && <EventStreamList events={filteredEvents} EventComponent={Inner} />}
         {sysEventStatus}
       </div>
-    </div>
+    </PaneBody>
   );
 };
 

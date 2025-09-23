@@ -1,14 +1,22 @@
 /* eslint-disable tsdoc/syntax */
 import * as _ from 'lodash-es';
-import * as React from 'react';
-import Helmet from 'react-helmet';
-import * as classNames from 'classnames';
+import { useEffect, useMemo, useState } from 'react';
+import { DocumentTitle } from '@console/shared/src/components/document-title/DocumentTitle';
+import { css } from '@patternfly/react-styles';
 import { sortable } from '@patternfly/react-table';
-import { Alert, Button, Tooltip } from '@patternfly/react-core';
+import {
+  Alert,
+  Button,
+  DescriptionList,
+  DescriptionListDescription,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  Tooltip,
+  Grid,
+  GridItem,
+} from '@patternfly/react-core';
 import SearchIcon from '@patternfly/react-icons/dist/js/icons/search-icon';
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: FIXME out-of-sync @types/react-redux version as new types cause many build errors
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
@@ -36,6 +44,7 @@ import {
 import { ByteDataTypes } from '@console/shared/src/graph-helper/data-utils';
 import * as k8sActions from '@console/dynamic-plugin-sdk/src/app/k8s/actions/k8s';
 import { useActivePerspective } from '@console/dynamic-plugin-sdk';
+import PaneBody from '@console/shared/src/components/layout/PaneBody';
 import {
   ConsoleLinkModel,
   NamespaceModel,
@@ -47,9 +56,9 @@ import { coFetchJSON } from '../co-fetch';
 import { k8sGet, referenceForModel } from '../module/k8s';
 import * as UIActions from '../actions/ui';
 import { DetailsPage, ListPage, Table, TableData } from './factory';
+import { ExternalLink } from '@console/shared/src/components/links/ExternalLink';
 import {
   DetailsItem,
-  ExternalLink,
   Kebab,
   LabelList,
   LoadingInline,
@@ -59,7 +68,6 @@ import {
   ResourceLink,
   ResourceSummary,
   SectionHeading,
-  Timestamp,
   formatBytesAsMiB,
   formatCores,
   humanizeBinaryBytes,
@@ -67,6 +75,7 @@ import {
   navFactory,
   useAccessReview,
 } from './utils';
+import { Timestamp } from '@console/shared/src/components/datetime/Timestamp';
 import { deleteNamespaceModal, configureNamespacePullSecretModal } from './modals';
 import { RoleBindingsPage } from './RBAC';
 import { Bar, Area, PROMETHEUS_BASE_PATH } from './graphs';
@@ -321,22 +330,24 @@ const NamespacesTableRow = ({ obj: ns, customData: { tableColumns } }) => {
         columnID={namespaceColumnInfo.displayName.id}
       >
         <span className="co-break-word co-line-clamp">
-          {getDisplayName(ns) || <span className="text-muted">{t('public~No display name')}</span>}
+          {getDisplayName(ns) || (
+            <span className="pf-v6-u-text-color-subtle">{t('public~No display name')}</span>
+          )}
         </span>
       </TableData>
       <TableData
-        className={classNames(namespaceColumnInfo.status.classes, 'co-break-word')}
+        className={css(namespaceColumnInfo.status.classes, 'co-break-word')}
         columns={columns}
         columnID={namespaceColumnInfo.status.id}
       >
         <Status status={ns.status?.phase} />
       </TableData>
       <TableData
-        className={classNames(namespaceColumnInfo.requester.classes, 'co-break-word')}
+        className={css(namespaceColumnInfo.requester.classes, 'co-break-word')}
         columns={columns}
         columnID={namespaceColumnInfo.requester.id}
       >
-        {requester || <span className="text-muted">{t('public~No requester')}</span>}
+        {requester || <span className="pf-v6-u-text-color-subtle">{t('public~No requester')}</span>}
       </TableData>
       <TableData
         className={namespaceColumnInfo.memory.classes}
@@ -365,7 +376,9 @@ const NamespacesTableRow = ({ obj: ns, customData: { tableColumns } }) => {
         columnID={namespaceColumnInfo.description.id}
       >
         <span className="co-break-word co-line-clamp">
-          {description || <span className="text-muted">{t('public~No description')}</span>}
+          {description || (
+            <span className="pf-v6-u-text-color-subtle">{t('public~No description')}</span>
+          )}
         </span>
       </TableData>
       <TableData
@@ -411,7 +424,7 @@ export const NamespacesList = (props) => {
   );
 
   // TODO Utilize usePoll hook
-  React.useEffect(() => {
+  useEffect(() => {
     const updateMetrics = () =>
       fetchNamespaceMetrics().then((result) => dispatch(UIActions.setNamespaceMetrics(result)));
     updateMetrics();
@@ -423,7 +436,7 @@ export const NamespacesList = (props) => {
       ? new Set(tableColumns[NamespacesColumnManagementID])
       : null;
 
-  const customData = React.useMemo(
+  const customData = useMemo(
     () => ({
       tableColumns: tableColumns?.[NamespacesColumnManagementID],
     }),
@@ -653,7 +666,7 @@ const ProjectTableRow = ({ obj: project, customData = {} }) => {
       >
         <span className="co-break-word co-line-clamp">
           {getDisplayName(project) || (
-            <span className="text-muted">{t('public~No display name')}</span>
+            <span className="pf-v6-u-text-color-subtle">{t('public~No display name')}</span>
           )}
         </span>
       </TableData>
@@ -665,11 +678,11 @@ const ProjectTableRow = ({ obj: project, customData = {} }) => {
         <Status status={project.status?.phase} />
       </TableData>
       <TableData
-        className={classNames(namespaceColumnInfo.requester.classes, 'co-break-word')}
+        className={css(namespaceColumnInfo.requester.classes, 'co-break-word')}
         columns={columns}
         columnID={namespaceColumnInfo.requester.id}
       >
-        {requester || <span className="text-muted">{t('public~No requester')}</span>}
+        {requester || <span className="pf-v6-u-text-color-subtle">{t('public~No requester')}</span>}
       </TableData>
       {showMetrics && (
         <>
@@ -704,7 +717,9 @@ const ProjectTableRow = ({ obj: project, customData = {} }) => {
             columnID={namespaceColumnInfo.description.id}
           >
             <span className="co-break-word co-line-clamp">
-              {description || <span className="text-muted">{t('public~No description')}</span>}
+              {description || (
+                <span className="pf-v6-u-text-color-subtle">{t('public~No description')}</span>
+              )}
             </span>
           </TableData>
           <TableData
@@ -728,7 +743,7 @@ ProjectTableRow.displayName = 'ProjectTableRow';
 
 export const ProjectsTable = (props) => {
   const { t } = useTranslation();
-  const customData = React.useMemo(
+  const customData = useMemo(
     () => ({
       ProjectLinkComponent: ProjectLink,
       actionsEnabled: false,
@@ -751,18 +766,6 @@ export const ProjectsTable = (props) => {
 const headerWithMetrics = () => projectTableHeader({ showMetrics: true, showActions: true });
 const headerNoMetrics = () => projectTableHeader({ showMetrics: false, showActions: true });
 
-const ProjectNotFoundMessage = () => {
-  const { t } = useTranslation();
-  const canCreateNs = useFlag(FLAGS.CAN_CREATE_NS);
-  const canCreateProject = useFlag(FLAGS.CAN_CREATE_PROJECT);
-  const canCreate = canCreateNs || canCreateProject;
-  return (
-    <ConsoleEmptyState title={t('public~Welcome to OpenShift')}>
-      <OpenShiftGettingStarted canCreate={canCreate} />
-    </ConsoleEmptyState>
-  );
-};
-
 const ProjectEmptyMessage = () => {
   const { t } = useTranslation();
   return (
@@ -784,7 +787,7 @@ export const ProjectList = ({ data, ...tableProps }) => {
   );
   const isPrometheusAvailable = usePrometheusGate();
   const showMetrics = isPrometheusAvailable && canGetNS && window.screen.width >= 1200;
-  const customData = React.useMemo(
+  const customData = useMemo(
     () => ({
       showMetrics,
       tableColumns: tableColumns?.[projectColumnManagementID],
@@ -793,7 +796,7 @@ export const ProjectList = ({ data, ...tableProps }) => {
   );
 
   // TODO Utilize usePoll hook
-  React.useEffect(() => {
+  useEffect(() => {
     if (showMetrics) {
       const updateMetrics = () =>
         fetchNamespaceMetrics().then((result) => dispatch(UIActions.setNamespaceMetrics(result)));
@@ -822,7 +825,7 @@ export const ProjectList = ({ data, ...tableProps }) => {
       data={data}
       Header={showMetrics ? headerWithMetrics : headerNoMetrics}
       Row={ProjectTableRow}
-      NoDataEmptyMsg={ProjectNotFoundMessage}
+      NoDataEmptyMsg={OpenShiftGettingStarted}
       EmptyMsg={ProjectEmptyMessage}
       customData={customData}
       virtualize
@@ -872,15 +875,15 @@ export const ProjectsPage = (props) => {
   );
 };
 
-/** @type {React.SFC<{namespace: K8sResourceKind}>} */
+/** @type {React.FCC<{namespace: K8sResourceKind}>} */
 export const PullSecret = (props) => {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [data, setData] = React.useState([]);
-  const [error, setError] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState([]);
+  const [error, setError] = useState(false);
   const { t } = useTranslation();
   const { namespace, canViewSecrets } = props;
 
-  React.useEffect(() => {
+  useEffect(() => {
     k8sGet(ServiceAccountModel, 'default', namespace.metadata.name, {})
       .then((serviceAccount) => {
         setIsLoading(false);
@@ -928,26 +931,30 @@ export const PullSecret = (props) => {
   };
 
   return (
-    <>
-      <dt>{t('public~Default pull Secret', { count: data.length })}</dt>
-      <dd>{isLoading ? <LoadingInline /> : secrets()}</dd>
-    </>
+    <DescriptionListGroup>
+      <DescriptionListTerm>
+        {t('public~Default pull Secret', { count: data.length })}
+      </DescriptionListTerm>
+      <DescriptionListDescription>
+        {isLoading ? <LoadingInline /> : secrets()}
+      </DescriptionListDescription>
+    </DescriptionListGroup>
   );
 };
 
 export const NamespaceLineCharts = ({ ns }) => {
   const { t } = useTranslation();
   return (
-    <div className="row">
-      <div className="col-md-6 col-sm-12">
+    <Grid hasGutter>
+      <GridItem md={6}>
         <Area
           title={t('public~CPU usage')}
           humanize={humanizeCpuCores}
           namespace={ns.metadata.name}
           query={`namespace:container_cpu_usage:sum{namespace='${ns.metadata.name}'}`}
         />
-      </div>
-      <div className="col-md-6 col-sm-12">
+      </GridItem>
+      <GridItem md={6}>
         <Area
           title={t('public~Memory usage')}
           humanize={humanizeBinaryBytes}
@@ -955,8 +962,8 @@ export const NamespaceLineCharts = ({ ns }) => {
           namespace={ns.metadata.name}
           query={`sum by(namespace) (container_memory_working_set_bytes{namespace="${ns.metadata.name}",container="",pod!=""})`}
         />
-      </div>
-    </div>
+      </GridItem>
+    </Grid>
   );
 };
 
@@ -977,11 +984,11 @@ const ResourceUsage = ({ ns }) => {
   const { t } = useTranslation();
   const isPrometheusAvailable = usePrometheusGate();
   return isPrometheusAvailable ? (
-    <div className="co-m-pane__body">
+    <PaneBody>
       <SectionHeading text={t('public~Resource usage')} />
       <NamespaceLineCharts ns={ns} />
       <TopPodsBarChart ns={ns} />
-    </div>
+    </PaneBody>
   ) : null;
 };
 
@@ -999,57 +1006,67 @@ export const NamespaceSummary = ({ ns }) => {
   });
 
   return (
-    <div className="row">
-      <div className="col-sm-6 col-xs-12">
+    <Grid hasGutter>
+      <GridItem sm={6}>
         {/* Labels aren't editable on kind Project, only Namespace. */}
         <ResourceSummary resource={ns} showLabelEditor={ns.kind === 'Namespace'}>
-          <dt>{t('public~Display name')}</dt>
-          <dd
-            className={classNames({
-              'text-muted': !displayName,
-            })}
-          >
-            {displayName || t('public~No display name')}
-          </dd>
-          <dt>{t('public~Description')}</dt>
-          <dd>
-            <p
-              className={classNames({
-                'text-muted': !description,
-                'co-pre-wrap': description,
-                'co-namespace-summary__description': description,
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t('public~Display name')}</DescriptionListTerm>
+            <DescriptionListDescription
+              className={css({
+                'text-muted': !displayName,
               })}
             >
-              {description || t('public~No description')}
-            </p>
-          </dd>
-          {requester && <dt>Requester</dt>}
-          {requester && <dd>{requester}</dd>}
+              {displayName || t('public~No display name')}
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t('public~Description')}</DescriptionListTerm>
+            <DescriptionListDescription>
+              <p
+                className={css({
+                  'pf-v6-u-text-color-subtle': !description,
+                  'co-pre-wrap': description,
+                  'co-namespace-summary__description': description,
+                })}
+              >
+                {description || t('public~No description')}
+              </p>
+            </DescriptionListDescription>
+          </DescriptionListGroup>
+          {requester && (
+            <DescriptionListGroup>
+              <DescriptionListTerm>Requester</DescriptionListTerm>{' '}
+              <DescriptionListDescription>{requester}</DescriptionListDescription>
+            </DescriptionListGroup>
+          )}
         </ResourceSummary>
-      </div>
-      <div className="col-sm-6 col-xs-12">
-        <dl className="co-m-pane__details">
+      </GridItem>
+      <GridItem sm={6}>
+        <DescriptionList>
           <DetailsItem label={t('public~Status')} obj={ns} path="status.phase">
             <Status status={ns.status?.phase} />
           </DetailsItem>
           <PullSecret namespace={ns} canViewSecrets={canListSecrets} />
-          <dt>{t('public~NetworkPolicies')}</dt>
-          <dd>
-            <Link to={`/k8s/ns/${ns.metadata.name}/networkpolicies`}>
-              {t('public~NetworkPolicies')}
-            </Link>
-          </dd>
+          <DescriptionListGroup>
+            <DescriptionListTerm>{t('public~NetworkPolicies')}</DescriptionListTerm>
+            <DescriptionListDescription>
+              <Link to={`/k8s/ns/${ns.metadata.name}/networkpolicies`}>
+                {t('public~NetworkPolicies')}
+              </Link>
+            </DescriptionListDescription>
+          </DescriptionListGroup>
           {serviceMeshEnabled && (
-            <>
-              <dt>{t('public~Service mesh')}</dt>
-              <dd>
+            <DescriptionListGroup>
+              <DescriptionListTerm>{t('public~Service mesh')}</DescriptionListTerm>
+              <DescriptionListDescription>
                 <GreenCheckCircleIcon /> {t('public~Service mesh enabled')}
-              </dd>
-            </>
+              </DescriptionListDescription>
+            </DescriptionListGroup>
           )}
-        </dl>
-      </div>
-    </div>
+        </DescriptionList>
+      </GridItem>
+    </Grid>
   );
 };
 
@@ -1064,20 +1081,16 @@ export const NamespaceDetails = ({ obj: ns, customData }) => {
   const links = getNamespaceDashboardConsoleLinks(ns, consoleLinks);
   return (
     <div>
-      {perspective === 'dev' && (
-        <Helmet>
-          <title>{t('public~Project details')}</title>
-        </Helmet>
-      )}
-      <div className="co-m-pane__body">
+      {perspective === 'dev' && <DocumentTitle>{t('public~Project details')}</DocumentTitle>}
+      <PaneBody>
         {!customData?.hideHeading && (
           <SectionHeading text={t('public~{{kind}} details', { kind: ns.kind })} />
         )}
         <NamespaceSummary ns={ns} />
-      </div>
+      </PaneBody>
       {ns.kind === 'Namespace' && <ResourceUsage ns={ns} />}
       {!_.isEmpty(links) && (
-        <div className="co-m-pane__body">
+        <PaneBody>
           <SectionHeading text={t('public~Launcher')} />
           <ul className="pf-v6-c-list pf-m-plain">
             {_.map(_.sortBy(links, 'spec.text'), (link) => {
@@ -1088,7 +1101,7 @@ export const NamespaceDetails = ({ obj: ns, customData }) => {
               );
             })}
           </ul>
-        </div>
+        </PaneBody>
       )}
     </div>
   );
