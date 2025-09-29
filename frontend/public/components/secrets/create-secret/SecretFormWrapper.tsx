@@ -187,7 +187,7 @@ export const SecretFormWrapper: FCC<BaseEditSecretProps_> = (props) => {
     <>
       <DocumentTitle>{title}</DocumentTitle>
       <PageHeading title={title} helpText={helptext} />
-      <PaneBody className="co-m-pane__form">
+      <PaneBody>
         <Form onSubmit={save}>
           {renderBody()}
           <ButtonBar errorMessage={error} inProgress={inProgress}>
